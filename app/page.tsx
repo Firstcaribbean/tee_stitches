@@ -167,7 +167,7 @@ const defaultManagedConfig: ManagedConfig = {
     cursor: true,
     fabricScene: true
   },
-  posts: tiktokPosts.map((post) => ({ ...post })),
+  posts: [],
   mediaAssets: []
 };
 
@@ -179,7 +179,7 @@ const collections = [
   },
   {
     name: "Luxury gowns",
-    mood: "Gown work shown through real Tee Stitches TikTok moments.",
+    mood: "Gown work shown through real Tee Stitches atelier moments.",
     post: tiktokPosts[2]
   },
   {
@@ -536,8 +536,23 @@ export default function Home() {
     post: managedPosts[index]
   }));
   useEffect(() => {
-    const loadConfig = () => {
+    const loadConfig = async () => {
       try {
+        const response = await fetch("/api/site-config", { cache: "no-store" });
+        if (response.ok) {
+          const parsed = await response.json() as ManagedConfig;
+          setManagedConfig({
+            ...defaultManagedConfig,
+            ...parsed,
+            brand: { ...defaultManagedConfig.brand, ...parsed.brand },
+            booking: { ...defaultManagedConfig.booking, ...parsed.booking },
+            animation: { ...defaultManagedConfig.animation, ...parsed.animation },
+            posts: Array.isArray(parsed.posts) ? parsed.posts : defaultManagedConfig.posts,
+            mediaAssets: parsed.mediaAssets?.length ? parsed.mediaAssets : []
+          });
+          return;
+        }
+
         const saved = window.localStorage.getItem(ADMIN_STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved) as ManagedConfig;
@@ -556,8 +571,11 @@ export default function Home() {
       }
     };
     loadConfig();
-    window.addEventListener("storage", loadConfig);
-    return () => window.removeEventListener("storage", loadConfig);
+    const syncLocalConfig = () => {
+      void loadConfig();
+    };
+    window.addEventListener("storage", syncLocalConfig);
+    return () => window.removeEventListener("storage", syncLocalConfig);
   }, []);
 
   const assetFor = (placement: MediaAsset["placement"]) =>

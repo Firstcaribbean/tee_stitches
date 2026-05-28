@@ -114,51 +114,7 @@ const defaultConfig: ManagedConfig = {
     fabricScene: true
   },
   mediaAssets: [],
-  posts: [
-    {
-      id: "7642702852510534933",
-      kind: "video",
-      label: "Mixed brand showcase",
-      title: "Beauty in brown",
-      link: "https://www.tiktok.com/@temi_tee03/video/7642702852510534933"
-    },
-    {
-      id: "7627426239627660564",
-      kind: "video",
-      label: "Client work",
-      title: "My little princess loved her dress",
-      link: "https://www.tiktok.com/@temi_tee03/video/7627426239627660564"
-    },
-    {
-      id: "7626725229380783381",
-      kind: "video",
-      label: "Native elegance",
-      title: "A work of art",
-      link: "https://www.tiktok.com/@temi_tee03/video/7626725229380783381"
-    },
-    {
-      id: "7622414664437157140",
-      kind: "video",
-      label: "Fitting room",
-      title: "The latest bride in town",
-      link: "https://www.tiktok.com/@temi_tee03/video/7622414664437157140"
-    },
-    {
-      id: "7622566952350878996",
-      kind: "video",
-      label: "Transformation",
-      title: "Bride reception dress",
-      link: "https://www.tiktok.com/@temi_tee03/video/7622566952350878996"
-    },
-    {
-      id: "7611800793661951253",
-      kind: "video",
-      label: "Main showcase",
-      title: "Something light for the culture",
-      link: "https://www.tiktok.com/@temi_tee03/video/7611800793661951253",
-      featured: true
-    }
-  ]
+  posts: []
 };
 
 function mergeConfig(config: Partial<ManagedConfig>): ManagedConfig {
@@ -240,17 +196,42 @@ export default function AdminPage() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [passcode, setPasscode] = useState("");
   const [authError, setAuthError] = useState("");
+  const [cloudStatus, setCloudStatus] = useState("Local browser mode");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const consultationText = useMemo(() => config.booking.consultationTypes.join(", "), [config.booking.consultationTypes]);
 
   useEffect(() => {
     setIsAuthed(window.localStorage.getItem(ADMIN_SESSION_KEY) === "active");
-    try {
+    const loadConfig = async () => {
+      let localConfig: ManagedConfig | null = null;
+      try {
       const saved = window.localStorage.getItem(ADMIN_STORAGE_KEY);
-      if (saved) setConfig(mergeConfig(JSON.parse(saved)));
+        if (saved) {
+          localConfig = mergeConfig(JSON.parse(saved));
+          setConfig(localConfig);
+        }
       setInquiries(JSON.parse(window.localStorage.getItem(INQUIRIES_KEY) ?? "[]"));
     } catch {
       setConfig(defaultConfig);
     }
+
+      try {
+        const response = await fetch("/api/site-config", { cache: "no-store" });
+        if (!response.ok) {
+          setCloudStatus(localConfig ? "Using laptop draft. Publish to Cloudinary to share it." : "No cloud config published yet.");
+          return;
+        }
+        const cloudConfig = mergeConfig(await response.json());
+        setConfig(cloudConfig);
+        window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(cloudConfig));
+        setCloudStatus("Cloudinary config loaded. Changes can sync across devices.");
+      } catch {
+        setCloudStatus(localConfig ? "Cloud config unavailable. Using laptop draft." : "Cloud config unavailable.");
+      }
+    };
+
+    loadConfig();
   }, []);
 
   const updateBrand = (key: keyof ManagedConfig["brand"], value: string) => {
@@ -301,14 +282,33 @@ export default function AdminPage() {
     }));
   };
 
+  const publishConfig = async (nextConfig: ManagedConfig) => {
+    const response = await fetch("/api/admin/config", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nextConfig)
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+  };
+
   const save = async () => {
+    setIsPublishing(true);
     try {
       const storageSafeConfig = await migrateMediaConfig(config);
       setConfig(storageSafeConfig);
       window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(storageSafeConfig));
+      await publishConfig(storageSafeConfig);
       setSavedAt(new Date().toLocaleTimeString());
+      setCloudStatus("Published online. Phones and laptops will load these changes.");
     } catch {
-      window.alert("The settings could not be saved. Try removing very large files or refreshing the admin page.");
+      window.alert("The settings were saved on this laptop, but could not publish online. Check Cloudinary/Vercel environment settings.");
+      setCloudStatus("Cloud publish failed. Laptop draft is still saved locally.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -345,10 +345,33 @@ export default function AdminPage() {
     setIsAuthed(false);
   };
 
+  const uploadFileToCloudinary = async (file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch("/api/admin/upload", {
+      method: "POST",
+      credentials: "include",
+      body
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    return await response.json() as Pick<MediaAsset, "id" | "name" | "type" | "url">;
+  };
+
   const fileToMediaAsset = async (file: File) => {
     const mime = file.type;
     const id = `${Date.now()}-${crypto.randomUUID()}-${file.name}`;
-    await saveMediaFile(id, file);
+    try {
+      const uploaded = await uploadFileToCloudinary(file);
+      return {
+        ...uploaded,
+        placement: "gallery",
+        caption: uploaded.name.replace(/\.[^.]+$/, "")
+      } satisfies MediaAsset;
+    } catch {
+      await saveMediaFile(id, file);
+    }
+
     return {
       id,
       name: file.name,
@@ -369,6 +392,45 @@ export default function AdminPage() {
     if (!files?.length) return;
     const media = await fileToMediaAsset(files[0]);
     updatePost(index, "media", media);
+  };
+
+  const cloudifyAsset = async (asset: MediaAsset) => {
+    if (!asset.url.startsWith("idb:") && !asset.url.startsWith("data:")) return asset;
+
+    const resolved = asset.url.startsWith("data:") ? asset.url : await resolveMediaUrl(asset.url);
+    if (!resolved) return asset;
+
+    const blob = asset.url.startsWith("data:") ? dataUrlToBlob(asset.url) : await fetch(resolved).then((response) => response.blob());
+    const uploaded = await uploadFileToCloudinary(new File([blob], asset.name, { type: blob.type || "application/octet-stream" }));
+    return {
+      ...asset,
+      ...uploaded,
+      caption: asset.caption || uploaded.name.replace(/\.[^.]+$/, "")
+    } satisfies MediaAsset;
+  };
+
+  const migrateLocalUploadsToCloud = async () => {
+    setIsMigrating(true);
+    try {
+      const cloudConfig = {
+        ...config,
+        posts: await Promise.all(config.posts.map(async (post) => ({
+          ...post,
+          media: post.media ? await cloudifyAsset(post.media) : undefined
+        }))),
+        mediaAssets: await Promise.all(config.mediaAssets.map(cloudifyAsset))
+      };
+      setConfig(cloudConfig);
+      window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(cloudConfig));
+      await publishConfig(cloudConfig);
+      setSavedAt(new Date().toLocaleTimeString());
+      setCloudStatus("Migration complete. Existing laptop uploads are now online.");
+    } catch {
+      window.alert("Migration failed. Check the Cloudinary environment settings, then try again from this laptop.");
+      setCloudStatus("Migration failed before all uploads moved online.");
+    } finally {
+      setIsMigrating(false);
+    }
   };
 
   const updateAsset = (index: number, key: keyof MediaAsset, value: string) => {
@@ -421,11 +483,13 @@ export default function AdminPage() {
           <p className="eyebrow">Private fashion house control room</p>
           <h1>Manage the brand experience without touching code.</h1>
           <div className="admin-actions">
-            <button type="button" className="primary-button" onClick={save}><Save size={18} /> Save changes</button>
+            <button type="button" className="primary-button" onClick={save} disabled={isPublishing}><Save size={18} /> {isPublishing ? "Publishing..." : "Save changes"}</button>
             <button type="button" className="secondary-button" onClick={exportConfig}><Download size={18} /> Export config</button>
+            <button type="button" className="secondary-button" onClick={migrateLocalUploadsToCloud} disabled={isMigrating}><Upload size={18} /> {isMigrating ? "Migrating..." : "Migrate laptop uploads"}</button>
             <button type="button" className="secondary-button" onClick={reset}><Settings size={18} /> Reset</button>
             <button type="button" className="secondary-button" onClick={logout}><Shield size={18} /> Lock admin</button>
           </div>
+          <p className="admin-empty">{cloudStatus}</p>
           {savedAt && <p className="admin-saved"><Check size={16} /> Saved at {savedAt}. Refresh the public site to see changes.</p>}
         </div>
 
@@ -475,7 +539,7 @@ export default function AdminPage() {
         {activePanel === "posts" && <section id="posts" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Clapperboard size={18} />
-            <h2>TikTok & Showcase Posts</h2>
+            <h2>Showcase Posts</h2>
           </div>
           <div className="post-manager">
             {config.posts.map((post, index) => (
@@ -543,7 +607,7 @@ export default function AdminPage() {
             <input type="file" accept="image/*,video/*,.gif,.webp" multiple onChange={(event) => uploadMedia(event.target.files)} />
           </label>
           <p className="admin-empty">
-            Uploaded files can replace the hero showcase, about portrait, collection visuals, or appear in the gallery. This local version stores uploads in the browser; production should move these assets to Supabase/Firebase Storage.
+            Uploaded files publish to Cloudinary when the environment keys are set. If Cloudinary is not configured yet, uploads stay as a laptop draft until you use "Migrate laptop uploads".
           </p>
           <div className="asset-grid">
             {config.mediaAssets.length === 0 ? (
@@ -628,7 +692,7 @@ export default function AdminPage() {
             <h2>Production Notes</h2>
           </div>
           <p className="admin-empty">
-            This dashboard currently stores settings in this browser for fast local management. For production, connect these same fields to Supabase or Firebase with admin authentication, media storage, and booking notifications.
+            For all-device publishing, set the Cloudinary environment variables in Vercel, then use Save changes or Migrate laptop uploads from this laptop.
           </p>
         </section>}
       </section>
