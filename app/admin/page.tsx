@@ -31,6 +31,7 @@ type ManagedPost = {
   link: string;
   thumbnail?: string;
   featured?: boolean;
+  media?: MediaAsset;
 };
 
 type MediaAsset = {
@@ -195,13 +196,23 @@ export default function AdminPage() {
     setConfig((current) => ({ ...current, booking: { ...current.booking, [key]: value } }));
   };
 
-  const updatePost = (index: number, key: keyof ManagedPost, value: string | boolean) => {
+  const updatePost = (index: number, key: keyof ManagedPost, value: string | boolean | MediaAsset | undefined) => {
     setConfig((current) => {
       const posts = current.posts.map((post, postIndex) => {
         if (key === "featured") return { ...post, featured: postIndex === index ? Boolean(value) : false };
         return postIndex === index ? { ...post, [key]: value } : post;
       });
       return { ...current, posts };
+    });
+  };
+
+  const deletePost = (index: number) => {
+    setConfig((current) => {
+      const posts = current.posts.filter((_, postIndex) => postIndex !== index);
+      return {
+        ...current,
+        posts: posts.some((post) => post.featured) ? posts : posts.map((post, postIndex) => ({ ...post, featured: postIndex === 0 }))
+      };
     });
   };
 
@@ -242,30 +253,34 @@ export default function AdminPage() {
     setIsAuthed(false);
   };
 
+  const fileToMediaAsset = (file: File) =>
+    new Promise<MediaAsset>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const mime = file.type;
+        resolve({
+          id: `${Date.now()}-${file.name}`,
+          name: file.name,
+          type: mime.startsWith("video/") ? "video" : mime.includes("gif") ? "animation" : "image",
+          url: String(reader.result),
+          placement: "gallery",
+          caption: file.name.replace(/\.[^.]+$/, "")
+        });
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
   const uploadMedia = async (files: FileList | null) => {
     if (!files?.length) return;
-    const uploaded = await Promise.all(
-      Array.from(files).map(
-        (file) =>
-          new Promise<MediaAsset>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const mime = file.type;
-              resolve({
-                id: `${Date.now()}-${file.name}`,
-                name: file.name,
-                type: mime.startsWith("video/") ? "video" : mime.includes("gif") ? "animation" : "image",
-                url: String(reader.result),
-                placement: "gallery",
-                caption: file.name.replace(/\.[^.]+$/, "")
-              });
-            };
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(file);
-          })
-      )
-    );
+    const uploaded = await Promise.all(Array.from(files).map(fileToMediaAsset));
     setConfig((current) => ({ ...current, mediaAssets: [...uploaded, ...current.mediaAssets] }));
+  };
+
+  const uploadPostMedia = async (index: number, files: FileList | null) => {
+    if (!files?.length) return;
+    const media = await fileToMediaAsset(files[0]);
+    updatePost(index, "media", media);
   };
 
   const updateAsset = (index: number, key: keyof MediaAsset, value: string) => {
@@ -376,7 +391,17 @@ export default function AdminPage() {
             {config.posts.map((post, index) => (
               <article className="post-row" key={`${post.id}-${index}`}>
                 <div className="post-preview">
-                  <iframe src={`https://www.tiktok.com/embed/v2/${post.id}`} title={post.title} loading="lazy" />
+                  {post.media ? (
+                    post.media.type === "video" || post.media.type === "animation" ? (
+                      <video src={post.media.url} muted loop autoPlay playsInline />
+                    ) : (
+                      <img src={post.media.url} alt={post.media.caption || post.title} />
+                    )
+                  ) : post.id ? (
+                    <iframe src={`https://www.tiktok.com/embed/v2/${post.id}`} title={post.title} loading="lazy" />
+                  ) : (
+                    <div className="post-preview-empty">Upload media or add a TikTok ID.</div>
+                  )}
                 </div>
                 <div className="post-fields">
                   <div className="two-col">
@@ -391,6 +416,21 @@ export default function AdminPage() {
                     <input type="checkbox" checked={Boolean(post.featured)} onChange={(event) => updatePost(index, "featured", event.target.checked)} />
                     <span>Main hero showcase</span>
                   </label>
+                  <div className="post-media-tools">
+                    <label className="upload-box post-upload">
+                      <Upload size={20} />
+                      {post.media ? "Replace post media" : "Upload media for this post"}
+                      <input type="file" accept="image/*,video/*,.gif,.webp" onChange={(event) => uploadPostMedia(index, event.target.files)} />
+                    </label>
+                    {post.media && (
+                      <button className="secondary-button" onClick={() => updatePost(index, "media", undefined)}>
+                        <Trash2 size={18} /> Remove media
+                      </button>
+                    )}
+                    <button className="secondary-button danger-button" onClick={() => deletePost(index)}>
+                      <Trash2 size={18} /> Delete post
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -413,9 +453,6 @@ export default function AdminPage() {
               }))}
             >
               <Plus size={18} /> Add post
-            </button>
-            <button className="secondary-button" onClick={() => setConfig((current) => ({ ...current, posts: current.posts.slice(0, -1) }))}>
-              <Trash2 size={18} /> Remove last
             </button>
           </div>
         </section>

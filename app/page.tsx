@@ -96,6 +96,7 @@ type ManagedPost = {
   link: string;
   thumbnail?: string;
   featured?: boolean;
+  media?: MediaAsset;
 };
 
 type MediaAsset = {
@@ -338,6 +339,10 @@ function TikTokEmbed({
   title?: string;
   compact?: boolean;
 }) {
+  if (!post.id) {
+    return <div className={compact ? "empty-showcase compact" : "empty-showcase"}>Media coming soon</div>;
+  }
+
   return (
     <iframe
       className={compact ? "tiktok-embed-frame compact" : "tiktok-embed-frame"}
@@ -360,16 +365,18 @@ function MediaDisplay({
   title: string;
   compact?: boolean;
 }) {
-  if (!asset) return <TikTokEmbed post={fallback} title={title} compact={compact} />;
+  const media = asset ?? fallback.media;
+
+  if (!media) return <TikTokEmbed post={fallback} title={title} compact={compact} />;
 
   return (
     <div className={compact ? "managed-media compact" : "managed-media"}>
-      {asset.type === "video" || asset.type === "animation" ? (
-        <video src={asset.url} autoPlay loop muted playsInline controls={!compact} />
+      {media.type === "video" || media.type === "animation" ? (
+        <video src={media.url} autoPlay loop muted playsInline controls={!compact} />
       ) : (
-        <img src={asset.url} alt={asset.caption || asset.name} />
+        <img src={media.url} alt={media.caption || media.name} />
       )}
-      {(asset.caption || asset.name) && <span>{asset.caption || asset.name}</span>}
+      {(media.caption || media.name) && <span>{media.caption || media.name}</span>}
     </div>
   );
 }
@@ -698,7 +705,7 @@ export default function Home() {
             >
               <div className="look-number">0{index + 1}</div>
               <div className="look-embed">
-                <TikTokEmbed post={look.post} title={`${look.title} TikTok look`} compact />
+                <MediaDisplay fallback={look.post} title={`${look.title} Tee Stitches look`} compact />
               </div>
               <h3>{look.title}</h3>
               <p>{look.category}</p>
@@ -720,7 +727,7 @@ export default function Home() {
         <div className="phone-stack reveal">
           {managedPosts.slice(0, 3).map((post) => (
             <div className="phone-card" key={post.id}>
-              <TikTokEmbed post={post} title={post.title} compact />
+              <MediaDisplay fallback={post} title={post.title} compact />
               <span>{post.label}</span>
             </div>
           ))}
@@ -777,17 +784,19 @@ export default function Home() {
               <h3>{asset.caption || asset.name}</h3>
             </motion.article>
           ))}
-          {managedPosts.map((post) => (
-            <motion.article className={"featured" in post ? "gallery-post reveal featured" : "gallery-post reveal"} key={post.id} whileHover={{ y: -8 }}>
+          {managedPosts.map((post, index) => (
+            <motion.article className={"featured" in post ? "gallery-post reveal featured" : "gallery-post reveal"} key={`${post.id || post.title}-${index}`} whileHover={{ y: -8 }}>
               <div className="gallery-post-media">
-                <TikTokEmbed post={post} title={post.title} compact />
+                <MediaDisplay fallback={post} title={post.title} compact />
               </div>
               <p>{post.label}</p>
               <h3>{post.title}</h3>
-              <a href={post.link} target="_blank" rel="noreferrer">
-                Open on TikTok
-                <ArrowUpRight size={16} />
-              </a>
+              {post.link && (
+                <a href={post.link} target="_blank" rel="noreferrer">
+                  Open on TikTok
+                  <ArrowUpRight size={16} />
+                </a>
+              )}
             </motion.article>
           ))}
         </div>

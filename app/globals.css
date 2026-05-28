@@ -308,6 +308,21 @@ h2,
   min-height: 100%;
 }
 
+.empty-showcase {
+  display: grid;
+  place-items: center;
+  min-height: 42rem;
+  border: 1px solid rgba(255, 248, 238, 0.15);
+  border-radius: 0.75rem;
+  color: rgba(255, 248, 238, 0.68);
+  background: rgba(7, 5, 4, 0.75);
+  text-align: center;
+}
+
+.empty-showcase.compact {
+  min-height: 100%;
+}
+
 .managed-media {
   position: relative;
   width: 100%;
@@ -1059,16 +1074,48 @@ footer p {
   background: #000;
 }
 
-.post-preview iframe {
+.post-preview iframe,
+.post-preview img,
+.post-preview video {
   width: 100%;
   height: 100%;
   border: 0;
+  object-fit: cover;
+  display: block;
 }
 
 .post-fields {
   display: grid;
   align-content: start;
   gap: 1rem;
+}
+
+.post-preview-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 1rem;
+  color: rgba(255, 248, 238, 0.62);
+  text-align: center;
+}
+
+.post-media-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: stretch;
+}
+
+.post-upload {
+  min-height: 3.25rem;
+  flex: 1 1 14rem;
+  padding: 0.8rem;
+  cursor: pointer;
+}
+
+.danger-button {
+  border-color: rgba(255, 120, 120, 0.34);
+  color: #ffd3d3;
 }
 
 .inquiry-list {
@@ -1132,6 +1179,40 @@ footer p {
 }
 
 @media (max-width: 1050px) {
+  section {
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+
+  .top-nav {
+    padding-inline: 1rem;
+  }
+
+  .hero {
+    min-height: auto;
+    padding-top: 7rem;
+    padding-bottom: 4rem;
+  }
+
+  .hero-content {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .hero h1 {
+    max-width: 10ch;
+    font-size: clamp(3.7rem, 13vw, 7.5rem);
+  }
+
+  .hero-showcase {
+    width: min(20rem, 34vw);
+    min-width: 16rem;
+  }
+
+  .hero-showcase .tiktok-embed-frame,
+  .hero-showcase .managed-media,
+  .hero-showcase .empty-showcase {
+    min-height: 30rem;
+  }
+
   .collection-grid,
   .lookbook-stage {
     grid-template-columns: repeat(2, 1fr);
@@ -1154,19 +1235,58 @@ footer p {
     position: relative;
     height: auto;
   }
+
+  .admin-main {
+    min-width: 0;
+  }
 }
 
 @media (max-width: 720px) {
+  body {
+    background:
+      radial-gradient(circle at 70% 7%, rgba(215, 180, 106, 0.12), transparent 18rem),
+      linear-gradient(180deg, #050303 0%, #120c0a 44%, #080504 100%);
+  }
+
+  section {
+    padding: 4.5rem 1rem;
+  }
+
   .luxury-cursor {
     display: none;
   }
 
+  .top-nav {
+    position: sticky;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: rgba(7, 5, 4, 0.86);
+  }
+
+  .brand-mark {
+    max-width: 11rem;
+    line-height: 1;
+  }
+
   .top-nav > div {
-    display: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.55rem 0.85rem;
+  }
+
+  .top-nav a {
+    font-size: 0.76rem;
   }
 
   .hero {
-    align-items: center;
+    display: grid;
+    min-height: auto;
+    padding: 3.5rem 1rem 6rem;
+    gap: 1.5rem;
+    align-items: end;
+    justify-items: stretch;
   }
 
   .tiktok-float {
@@ -1183,38 +1303,84 @@ footer p {
     grid-template-columns: 1fr;
   }
 
+  .hero h1 {
+    max-width: 9ch;
+    font-size: clamp(3.2rem, 18vw, 5.2rem);
+    line-height: 0.86;
+  }
+
+  h2 {
+    font-size: clamp(2.25rem, 13vw, 4.25rem);
+  }
+
+  .hero-actions,
+  .admin-actions,
+  .post-media-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .portrait {
     min-height: 28rem;
   }
 
+  .portrait .tiktok-embed-frame,
+  .portrait .managed-media,
+  .portrait .empty-showcase {
+    min-height: 28rem;
+  }
+
   .phone-stack {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
     overflow-x: auto;
-    min-height: 27rem;
-    padding-left: 4rem;
+    min-height: auto;
+    padding-left: 0;
   }
 
   .phone-card {
-    flex: 0 0 12rem;
+    flex: none;
+    width: 100%;
+    transform: none !important;
   }
 
   .hero-showcase {
-    position: relative;
+    position: static;
     top: auto;
     right: auto;
     z-index: 3;
-    width: min(100%, 22rem);
-    margin-top: 2rem;
+    width: 100%;
+    min-width: 0;
+    margin-top: 0;
+  }
+
+  .hero-showcase .tiktok-embed-frame,
+  .hero-showcase .managed-media,
+  .hero-showcase .empty-showcase,
+  .tiktok-embed-frame,
+  .managed-media,
+  .empty-showcase {
+    min-height: 30rem;
   }
 
   .hero-content {
     max-width: 100%;
   }
 
-  .hero {
-    align-items: flex-end;
-    flex-direction: column;
-    justify-content: center;
+  .collection-card {
+    min-height: 30rem;
+  }
+
+  .gallery-post-media,
+  .gallery-post.featured .gallery-post-media {
+    height: 30rem;
   }
 
   .gallery-post.featured {
@@ -1229,5 +1395,63 @@ footer p {
   footer,
   .footer-links {
     justify-content: flex-start;
+  }
+
+  .admin-shell {
+    display: block;
+  }
+
+  .admin-sidebar {
+    padding: 1rem;
+  }
+
+  .admin-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-main {
+    padding: 1rem;
+  }
+
+  .admin-hero h1 {
+    font-size: clamp(2.1rem, 12vw, 3.6rem);
+  }
+
+  .post-row,
+  .asset-card {
+    padding: 0.65rem;
+  }
+
+  .post-preview,
+  .asset-preview {
+    height: 24rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .top-nav {
+    display: grid;
+  }
+
+  .top-nav > div {
+    justify-content: flex-start;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 17vw, 4.4rem);
+  }
+
+  .hero-showcase .tiktok-embed-frame,
+  .hero-showcase .managed-media,
+  .hero-showcase .empty-showcase,
+  .gallery-post-media,
+  .gallery-post.featured .gallery-post-media {
+    min-height: 26rem;
+    height: 26rem;
+  }
+
+  .admin-nav {
+    grid-template-columns: 1fr;
   }
 }
