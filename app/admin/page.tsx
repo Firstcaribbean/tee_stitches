@@ -286,7 +286,6 @@ export default function AdminPage() {
   };
 
   const addPost = () => {
-    if (!confirmAction("Add a new post draft?")) return;
     setConfig((current) => ({
       ...current,
       posts: [
@@ -303,7 +302,6 @@ export default function AdminPage() {
   };
 
   const save = async () => {
-    if (!confirmAction("Save these admin changes now?")) return;
     try {
       const storageSafeConfig = await migrateMediaConfig(config);
       setConfig(storageSafeConfig);
@@ -322,7 +320,6 @@ export default function AdminPage() {
   };
 
   const exportConfig = () => {
-    if (!confirmAction("Export the current site configuration?")) return;
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -344,7 +341,6 @@ export default function AdminPage() {
   };
 
   const logout = () => {
-    if (!confirmAction("Lock the admin dashboard?")) return;
     window.localStorage.removeItem(ADMIN_SESSION_KEY);
     setIsAuthed(false);
   };
@@ -365,14 +361,12 @@ export default function AdminPage() {
 
   const uploadMedia = async (files: FileList | null) => {
     if (!files?.length) return;
-    if (!confirmAction(`Upload ${files.length} media file${files.length > 1 ? "s" : ""} to the media library?`)) return;
     const uploaded = await Promise.all(Array.from(files).map(fileToMediaAsset));
     setConfig((current) => ({ ...current, mediaAssets: [...uploaded, ...current.mediaAssets] }));
   };
 
   const uploadPostMedia = async (index: number, files: FileList | null) => {
     if (!files?.length) return;
-    if (!confirmAction("Upload this file to the selected post?")) return;
     const media = await fileToMediaAsset(files[0]);
     updatePost(index, "media", media);
   };
@@ -410,15 +404,15 @@ export default function AdminPage() {
       <aside className="admin-sidebar">
         <a className="brand-mark" href="/">Tee Stitches</a>
         <div className="admin-nav">
-          <button type="button" className={activePanel === "brand" ? "active" : ""} onClick={() => confirmAction("Open Brand settings?") && setActivePanel("brand")}><Palette size={16} /> Brand</button>
-          <button type="button" className={activePanel === "posts" ? "active" : ""} onClick={() => confirmAction("Open Posts manager?") && setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
-          <button type="button" className={activePanel === "media" ? "active" : ""} onClick={() => confirmAction("Open Media manager?") && setActivePanel("media")}><Upload size={16} /> Media</button>
-          <button type="button" className={activePanel === "animation" ? "active" : ""} onClick={() => confirmAction("Open Animation settings?") && setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
-          <button type="button" className={activePanel === "booking" ? "active" : ""} onClick={() => confirmAction("Open Booking settings?") && setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
-          <button type="button" className={activePanel === "inquiries" ? "active" : ""} onClick={() => confirmAction("Open Inquiries?") && setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
-          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => confirmAction("Open Production notes?") && setActivePanel("notes")}><Settings size={16} /> Notes</button>
+          <button type="button" className={activePanel === "brand" ? "active" : ""} onClick={() => setActivePanel("brand")}><Palette size={16} /> Brand</button>
+          <button type="button" className={activePanel === "posts" ? "active" : ""} onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
+          <button type="button" className={activePanel === "media" ? "active" : ""} onClick={() => setActivePanel("media")}><Upload size={16} /> Media</button>
+          <button type="button" className={activePanel === "animation" ? "active" : ""} onClick={() => setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
+          <button type="button" className={activePanel === "booking" ? "active" : ""} onClick={() => setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
+          <button type="button" className={activePanel === "inquiries" ? "active" : ""} onClick={() => setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
+          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Notes</button>
           <a href="/"><Eye size={16} /> View site</a>
-          <button type="button" onClick={() => confirmAction("Switch admin theme?") && setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
+          <button type="button" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
         </div>
       </aside>
 

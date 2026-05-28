@@ -294,31 +294,6 @@ h2,
   color: var(--ivory) !important;
 }
 
-.public-paged .page-section {
-  display: none;
-}
-
-.public-paged[data-public-page="home"] .page-home {
-  display: grid;
-}
-
-.public-paged[data-public-page="home"] .hero {
-  display: grid;
-}
-
-.public-paged[data-public-page="collections"] .page-collections,
-.public-paged[data-public-page="lookbook"] .page-lookbook,
-.public-paged[data-public-page="gallery"] .page-gallery,
-.public-paged[data-public-page="booking"] .page-booking {
-  display: block;
-}
-
-.public-paged[data-public-page="gallery"] .tiktok-section,
-.public-paged[data-public-page="booking"] .booking,
-.public-paged[data-public-page="booking"] .orders {
-  display: grid;
-}
-
 .hero {
   min-height: 100svh;
   display: grid;
