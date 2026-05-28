@@ -1572,11 +1572,12 @@ footer p {
 
   .phone-stack {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: stretch;
     overflow-x: clip;
     min-height: auto;
     padding-left: 0;
+    gap: 0.55rem;
   }
 
   .phone-card {
@@ -1586,7 +1587,7 @@ footer p {
     margin-left: 0;
     height: auto;
     min-height: 0;
-    aspect-ratio: 4 / 5.2;
+    aspect-ratio: 1 / 1.45;
     transform: none !important;
   }
 
@@ -1632,22 +1633,20 @@ footer p {
   }
 
   .scrolling-text {
-    contain: paint;
-    max-width: 100%;
-    font-size: clamp(1.8rem, 12vw, 3rem);
+    display: none;
   }
 
   .collection-card {
     min-height: 0;
-    aspect-ratio: 4 / 5.35;
+    aspect-ratio: 1 / 1.18;
     padding: 0;
-    border-radius: 0.72rem;
+    border-radius: 0.55rem;
   }
 
   .gallery-post-media,
   .gallery-post.featured .gallery-post-media {
     height: auto;
-    aspect-ratio: 4 / 5.1;
+    aspect-ratio: 1 / 1.15;
   }
 
   .gallery-post.featured {
@@ -1689,8 +1688,8 @@ footer p {
   }
 
   .collection-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
   }
 
   .collection-card div {
@@ -1726,18 +1725,19 @@ footer p {
 
   .lookbook-stage {
     position: static;
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
   }
 
   .look-card {
     min-height: 0;
-    padding: 0.65rem;
-    border-radius: 0.72rem;
+    padding: 0.55rem;
+    border-radius: 0.55rem;
   }
 
   .look-embed {
     height: auto;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 1 / 1.08;
   }
 
   .look-card p,
@@ -1746,8 +1746,8 @@ footer p {
   }
 
   .phone-card {
-    border-width: 0.35rem;
-    border-radius: 1.35rem;
+    border-width: 0.2rem;
+    border-radius: 0.8rem;
   }
 
   .review-card {
@@ -1761,18 +1761,18 @@ footer p {
   }
 
   .tiktok-gallery {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
   }
 
   .gallery-post {
     gap: 0.45rem;
-    padding: 0.5rem;
-    border-radius: 0.72rem;
+    padding: 0.42rem;
+    border-radius: 0.55rem;
   }
 
   .gallery-post p {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
     letter-spacing: 0.08em;
   }
 
@@ -1898,14 +1898,14 @@ footer p {
   .collection-grid,
   .lookbook-stage,
   .tiktok-gallery {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
   }
 
   .gallery-post,
   .collection-card,
   .look-card {
-    border-radius: 0.62rem;
+    border-radius: 0.5rem;
   }
 }
 

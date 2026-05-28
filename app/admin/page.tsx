@@ -23,7 +23,8 @@ import { resolveMediaUrl, saveMediaFile } from "../media-store";
 const ADMIN_STORAGE_KEY = "tee-stitches-admin-config";
 const INQUIRIES_KEY = "tee-stitches-inquiries";
 const ADMIN_SESSION_KEY = "tee-stitches-admin-session";
-const ADMIN_PASSCODE = "tee-stitches-admin";
+const DEFAULT_ADMIN_USER = "admin";
+const DEFAULT_ADMIN_PASSWORD = "tee-stitches-admin";
 
 type ManagedPost = {
   id: string;
@@ -69,6 +70,10 @@ type ManagedConfig = {
     requireDeposit: boolean;
     deliveryAreas: string;
   };
+  security: {
+    username: string;
+    password: string;
+  };
   animation: {
     intensity: "minimal" | "cinematic" | "runway";
     loader: boolean;
@@ -107,6 +112,10 @@ const defaultConfig: ManagedConfig = {
     requireDeposit: false,
     deliveryAreas: "Bida, Niger State, nationwide delivery on request"
   },
+  security: {
+    username: DEFAULT_ADMIN_USER,
+    password: DEFAULT_ADMIN_PASSWORD
+  },
   animation: {
     intensity: "cinematic",
     loader: true,
@@ -123,6 +132,7 @@ function mergeConfig(config: Partial<ManagedConfig>): ManagedConfig {
     ...config,
     brand: { ...defaultConfig.brand, ...config.brand },
     booking: { ...defaultConfig.booking, ...config.booking },
+    security: { ...defaultConfig.security, ...config.security },
     animation: { ...defaultConfig.animation, ...config.animation },
     posts: Array.isArray(config.posts) ? config.posts : defaultConfig.posts,
     mediaAssets: config.mediaAssets?.length ? config.mediaAssets : []
@@ -194,7 +204,8 @@ export default function AdminPage() {
   const [activePanel, setActivePanel] = useState<AdminPageKey>("brand");
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [isAuthed, setIsAuthed] = useState(false);
-  const [passcode, setPasscode] = useState("");
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [cloudStatus, setCloudStatus] = useState("Local browser mode");
   const [isPublishing, setIsPublishing] = useState(false);
@@ -242,6 +253,10 @@ export default function AdminPage() {
     setConfig((current) => ({ ...current, booking: { ...current.booking, [key]: value } }));
   };
 
+  const updateSecurity = (key: keyof ManagedConfig["security"], value: string) => {
+    setConfig((current) => ({ ...current, security: { ...current.security, [key]: value } }));
+  };
+
   const updatePost = (index: number, key: keyof ManagedPost, value: string | boolean | MediaAsset | undefined) => {
     setConfig((current) => {
       const posts = current.posts.map((post, postIndex) => {
@@ -283,10 +298,14 @@ export default function AdminPage() {
   };
 
   const publishConfig = async (nextConfig: ManagedConfig) => {
+    const credentials = { username: DEFAULT_ADMIN_USER, password: DEFAULT_ADMIN_PASSWORD };
     const response = await fetch("/api/admin/config", {
       method: "PUT",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${btoa(`${credentials.username}:${credentials.password}`)}`
+      },
       body: JSON.stringify(nextConfig)
     });
 
@@ -331,12 +350,13 @@ export default function AdminPage() {
 
   const login = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (passcode === ADMIN_PASSCODE) {
+    const expected = config.security ?? defaultConfig.security;
+    if (loginUsername.trim() === expected.username && loginPassword === expected.password) {
       window.localStorage.setItem(ADMIN_SESSION_KEY, "active");
       setIsAuthed(true);
       setAuthError("");
     } else {
-      setAuthError("Incorrect admin passcode.");
+      setAuthError("Incorrect username or password.");
     }
   };
 
@@ -346,11 +366,15 @@ export default function AdminPage() {
   };
 
   const uploadFileToCloudinary = async (file: File) => {
+    const credentials = { username: DEFAULT_ADMIN_USER, password: DEFAULT_ADMIN_PASSWORD };
     const body = new FormData();
     body.append("file", file);
     const response = await fetch("/api/admin/upload", {
       method: "POST",
       credentials: "include",
+      headers: {
+        Authorization: `Basic ${btoa(`${credentials.username}:${credentials.password}`)}`
+      },
       body
     });
 
@@ -446,16 +470,17 @@ export default function AdminPage() {
     return (
       <main className="admin-login">
         <form className="admin-login-card" onSubmit={login}>
-          <Shield size={28} />
-          <p className="eyebrow">Protected atelier dashboard</p>
-          <h1>Admin access required.</h1>
+          <h1>Admin Login</h1>
           <label>
-            Passcode
-            <input type="password" value={passcode} onChange={(event) => setPasscode(event.target.value)} placeholder="Enter admin passcode" />
+            Username
+            <input value={loginUsername} onChange={(event) => setLoginUsername(event.target.value)} placeholder="Username" autoComplete="username" />
+          </label>
+          <label>
+            Password
+            <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} placeholder="Password" autoComplete="current-password" />
           </label>
           {authError && <p className="admin-error">{authError}</p>}
-          <button className="primary-button" type="submit">Unlock dashboard</button>
-          <p className="admin-empty">Default local passcode: tee-stitches-admin. Replace with real auth before production handover.</p>
+          <button className="primary-button" type="submit">Login</button>
         </form>
       </main>
     );
@@ -508,6 +533,14 @@ export default function AdminPage() {
               <label>Location<input value={config.brand.location} onChange={(event) => updateBrand("location", event.target.value)} /></label>
             </div>
             <label>TikTok profile<input value={config.brand.tiktokUrl} onChange={(event) => updateBrand("tiktokUrl", event.target.value)} /></label>
+            <div className="admin-panel-head">
+              <Shield size={18} />
+              <h2>Admin Login</h2>
+            </div>
+            <div className="two-col">
+              <label>Username<input value={config.security.username} onChange={(event) => updateSecurity("username", event.target.value)} /></label>
+              <label>Password<input type="password" value={config.security.password} onChange={(event) => updateSecurity("password", event.target.value)} /></label>
+            </div>
           </section>}
 
           {activePanel === "animation" && <section id="animation" className="admin-panel">

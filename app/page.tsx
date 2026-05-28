@@ -134,6 +134,10 @@ type ManagedConfig = {
     requireDeposit: boolean;
     deliveryAreas: string;
   };
+  security?: {
+    username: string;
+    password: string;
+  };
   animation: {
     intensity: "minimal" | "cinematic" | "runway";
     loader: boolean;
