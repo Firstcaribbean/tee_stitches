@@ -19,9 +19,13 @@
 html {
   scroll-behavior: auto;
   background: var(--matte);
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   background:
     radial-gradient(circle at 70% 8%, rgba(215, 180, 106, 0.16), transparent 32rem),
@@ -31,12 +35,23 @@ body {
   overflow-x: hidden;
 }
 
+main {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body * {
+  min-width: 0;
+}
+
 button,
 a,
 input,
 textarea,
 select {
   font: inherit;
+  max-width: 100%;
 }
 
 button,
@@ -49,8 +64,25 @@ button {
 }
 
 img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+img,
 video {
   object-fit: cover;
+}
+
+p,
+h1,
+h2,
+h3,
+a,
+button,
+label,
+span {
+  overflow-wrap: anywhere;
 }
 
 section {
@@ -115,6 +147,8 @@ h2,
   top: 0;
   left: 0;
   right: 0;
+  width: 100%;
+  max-width: 100%;
   z-index: 50;
   display: flex;
   align-items: center;
@@ -178,6 +212,7 @@ h2,
   position: relative;
   z-index: 2;
   max-width: min(58rem, calc(100vw - 34rem));
+  min-width: 0;
 }
 
 .hero h1 {
@@ -186,6 +221,7 @@ h2,
   font-size: clamp(4rem, 10.8vw, 10.5rem);
   line-height: 0.82;
   font-weight: 500;
+  overflow-wrap: normal;
 }
 
 .tagline {
@@ -207,6 +243,7 @@ h2,
 
 .hero-actions {
   gap: 0.8rem;
+  flex-wrap: wrap;
 }
 
 .primary-button,
@@ -1242,10 +1279,39 @@ footer p {
 }
 
 @media (max-width: 720px) {
+  html,
+  body {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     background:
       radial-gradient(circle at 70% 7%, rgba(215, 180, 106, 0.12), transparent 18rem),
       linear-gradient(180deg, #050303 0%, #120c0a 44%, #080504 100%);
+  }
+
+  main,
+  section,
+  footer,
+  .admin-shell,
+  .admin-main,
+  .admin-panel,
+  .admin-hero,
+  .top-nav,
+  .hero,
+  .section-grid,
+  .collection-grid,
+  .lookbook-stage,
+  .tiktok-gallery,
+  .phone-stack,
+  .social-proof,
+  .review-row {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   section {
@@ -1258,6 +1324,7 @@ footer p {
 
   .top-nav {
     position: sticky;
+    top: 0;
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.85rem 1rem;
@@ -1265,7 +1332,7 @@ footer p {
   }
 
   .brand-mark {
-    max-width: 11rem;
+    max-width: 100%;
     line-height: 1;
   }
 
@@ -1274,6 +1341,7 @@ footer p {
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.55rem 0.85rem;
+    max-width: 100%;
   }
 
   .top-nav a {
@@ -1290,8 +1358,10 @@ footer p {
   }
 
   .tiktok-float {
+    position: fixed;
     right: 1rem;
     bottom: 1rem;
+    max-width: calc(100vw - 2rem);
   }
 
   .collection-grid,
@@ -1304,13 +1374,15 @@ footer p {
   }
 
   .hero h1 {
-    max-width: 9ch;
-    font-size: clamp(3.2rem, 18vw, 5.2rem);
-    line-height: 0.86;
+    max-width: 100%;
+    font-size: clamp(2.65rem, 14vw, 4.45rem);
+    line-height: 0.9;
+    overflow-wrap: normal;
   }
 
   h2 {
-    font-size: clamp(2.25rem, 13vw, 4.25rem);
+    font-size: clamp(2rem, 10.5vw, 3.4rem);
+    line-height: 0.98;
   }
 
   .hero-actions,
@@ -1340,7 +1412,7 @@ footer p {
     display: grid;
     grid-template-columns: 1fr;
     justify-content: stretch;
-    overflow-x: auto;
+    overflow-x: clip;
     min-height: auto;
     padding-left: 0;
   }
@@ -1348,6 +1420,12 @@ footer p {
   .phone-card {
     flex: none;
     width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    transform: none !important;
+  }
+
+  .look-card {
     transform: none !important;
   }
 
@@ -1367,11 +1445,20 @@ footer p {
   .tiktok-embed-frame,
   .managed-media,
   .empty-showcase {
+    width: 100%;
+    max-width: 100%;
     min-height: 30rem;
   }
 
   .hero-content {
+    width: 100%;
     max-width: 100%;
+  }
+
+  .scrolling-text {
+    contain: paint;
+    max-width: 100%;
+    font-size: clamp(1.8rem, 12vw, 3rem);
   }
 
   .collection-card {
@@ -1395,6 +1482,15 @@ footer p {
   footer,
   .footer-links {
     justify-content: flex-start;
+  }
+
+  footer {
+    grid-template-columns: 1fr;
+  }
+
+  .newsletter {
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
   }
 
   .admin-shell {
@@ -1432,14 +1528,16 @@ footer p {
 @media (max-width: 430px) {
   .top-nav {
     display: grid;
+    grid-template-columns: 1fr;
   }
 
   .top-nav > div {
     justify-content: flex-start;
+    width: 100%;
   }
 
   .hero h1 {
-    font-size: clamp(3rem, 17vw, 4.4rem);
+    font-size: clamp(2.55rem, 13.5vw, 3.75rem);
   }
 
   .hero-showcase .tiktok-embed-frame,
@@ -1453,5 +1551,29 @@ footer p {
 
   .admin-nav {
     grid-template-columns: 1fr;
+  }
+
+  .section-heading,
+  .story,
+  .glass-panel,
+  .gallery-post,
+  .collection-card,
+  .look-card,
+  .stat,
+  .admin-panel,
+  .post-row,
+  .asset-card {
+    max-width: 100%;
+  }
+
+  .eyebrow {
+    letter-spacing: 0.12em;
+  }
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
   }
 }
