@@ -201,11 +201,35 @@ h2,
   background: rgba(246, 238, 230, 0.94);
 }
 
+.theme-light .top-nav a,
+.theme-light .nav-button,
+.theme-light .brand-mark,
+.theme-light .hero h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light .tagline,
+.theme-light .admin-hero h1,
+.theme-light .admin-nav a,
+.theme-light .admin-nav button,
+.theme-light label,
+.theme-light .look-card p,
+.theme-light .look-card span,
+.theme-light .tracker-step p,
+.theme-light .collection-card h3,
+.theme-light footer h2 {
+  color: #2d1c15 !important;
+}
+
 .theme-light .hero-atmosphere,
-.theme-light .hero-overlay,
 .theme-light .fabric-scene,
 .theme-light .luxury-cursor {
   opacity: 0.18;
+}
+
+.theme-light .hero-overlay {
+  background:
+    linear-gradient(90deg, rgba(246, 238, 230, 0.94), rgba(246, 238, 230, 0.5), rgba(246, 238, 230, 0.14)),
+    linear-gradient(0deg, #f6eee6, transparent 42%);
 }
 
 .theme-light .glass-panel,
@@ -247,12 +271,17 @@ h2,
 .theme-light p,
 .theme-light .section-copy,
 .theme-light .story p,
+.theme-light .collection-card p,
 .theme-light .footer-links a,
 .theme-light .footer-links span,
 .theme-light .admin-empty,
 .theme-light .admin-note,
 .theme-light .admin-saved {
   color: rgba(45, 28, 21, 0.72);
+}
+
+.theme-light .managed-media span {
+  color: #fff8ee;
 }
 
 .top-nav > div {
@@ -274,7 +303,7 @@ h2,
 }
 
 .public-paged[data-public-page="home"] .hero {
-  display: flex;
+  display: grid;
 }
 
 .public-paged[data-public-page="collections"] .page-collections,
@@ -292,10 +321,13 @@ h2,
 
 .hero {
   min-height: 100svh;
-  display: flex;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(26rem, 1.18fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
   overflow: hidden;
-  padding-bottom: clamp(4rem, 9vw, 8rem);
+  padding-top: clamp(6rem, 9vw, 8rem);
+  padding-bottom: clamp(3rem, 6vw, 5rem);
 }
 
 .hero-atmosphere,
@@ -326,13 +358,13 @@ h2,
 
 .hero-content {
   position: relative;
-  z-index: 2;
-  max-width: min(58rem, calc(100vw - 34rem));
+  z-index: 5;
+  max-width: min(52rem, 100%);
   min-width: 0;
 }
 
 .hero h1 {
-  max-width: 11ch;
+  max-width: 10ch;
   margin: 0.6rem 0 0;
   font-size: clamp(4rem, 10.8vw, 10.5rem);
   line-height: 0.82;
@@ -420,21 +452,32 @@ h2,
 }
 
 .hero-showcase {
-  position: absolute;
-  right: clamp(1rem, 5vw, 5rem);
-  top: 12vh;
+  position: relative;
+  right: auto;
+  top: auto;
   z-index: 4;
-  width: min(22rem, 28vw);
-  min-width: 18rem;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
   display: grid;
   gap: 0.65rem;
 }
 
-.hero-showcase .tiktok-embed-frame {
-  min-height: min(64vh, 34rem);
+.hero-showcase .tiktok-embed-frame,
+.hero-showcase .managed-media,
+.hero-showcase .empty-showcase {
+  height: min(76svh, 52rem);
+  min-height: 34rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .hero-showcase > span {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
   width: fit-content;
   padding: 0.45rem 0.75rem;
   border: 1px solid rgba(215, 180, 106, 0.28);
@@ -1379,6 +1422,7 @@ footer p {
   }
 
   .hero {
+    grid-template-columns: minmax(0, 0.9fr) minmax(22rem, 1.1fr);
     min-height: auto;
     padding-top: 7rem;
     padding-bottom: 4rem;
@@ -1394,8 +1438,8 @@ footer p {
   }
 
   .hero-showcase {
-    width: min(20rem, 34vw);
-    min-width: 16rem;
+    width: 100%;
+    min-width: 0;
   }
 
   .hero-showcase .tiktok-embed-frame,
@@ -1505,6 +1549,7 @@ footer p {
 
   .hero {
     display: grid;
+    grid-template-columns: 1fr;
     min-height: auto;
     padding: 1rem 1rem 3rem;
     gap: 1rem;
@@ -1605,10 +1650,10 @@ footer p {
     width: 100%;
     min-width: 0;
     margin-top: 0;
-    padding: 0.65rem;
-    border: 1px solid rgba(255, 248, 238, 0.1);
-    border-radius: 0.75rem;
-    background: rgba(255, 248, 238, 0.045);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .hero-showcase .tiktok-embed-frame,
@@ -1617,7 +1662,8 @@ footer p {
   .hero-showcase .managed-media {
     width: 100%;
     max-width: 100%;
-    min-height: 23rem;
+    height: 62svh;
+    min-height: 24rem;
   }
 
   .tiktok-embed-frame,
@@ -1916,4 +1962,46 @@ footer p {
   body {
     overflow-x: clip;
   }
+}
+
+main.theme-light,
+main.theme-light .top-nav a,
+main.theme-light .nav-button,
+main.theme-light .brand-mark,
+main.theme-light .hero h1,
+main.theme-light h2,
+main.theme-light h3,
+main.theme-light .tagline,
+main.theme-light label,
+main.theme-light .story p,
+main.theme-light .section-copy,
+main.theme-light .collection-card p,
+main.theme-light .look-card p,
+main.theme-light .look-card span,
+main.theme-light .footer-links a,
+main.theme-light .footer-links span,
+main.theme-light footer p,
+main.theme-light.admin-shell,
+main.theme-light.admin-shell .brand-mark,
+main.theme-light.admin-shell .admin-hero h1,
+main.theme-light.admin-shell .admin-nav a,
+main.theme-light.admin-shell .admin-nav button,
+main.theme-light.admin-shell label,
+main.theme-light.admin-shell .admin-empty,
+main.theme-light.admin-shell .admin-note,
+main.theme-light.admin-shell .admin-saved {
+  color: #2d1c15 !important;
+}
+
+main.theme-light .eyebrow,
+main.theme-light .admin-panel-head,
+main.theme-light .collection-card > span,
+main.theme-light .gallery-post p,
+main.theme-light .stat span,
+main.theme-light.admin-shell .admin-panel-head {
+  color: #8b623e !important;
+}
+
+main.theme-light .managed-media span {
+  color: #fff8ee !important;
 }
