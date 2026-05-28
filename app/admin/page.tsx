@@ -18,6 +18,7 @@ import {
   Upload,
   Wand2
 } from "lucide-react";
+import { resolveMediaUrl, saveMediaFile } from "../media-store";
 
 const ADMIN_STORAGE_KEY = "tee-stitches-admin-config";
 const INQUIRIES_KEY = "tee-stitches-inquiries";
@@ -176,6 +177,60 @@ function extractTikTokId(value: string) {
   return value.match(/(?:video|photo)\/(\d+)/)?.[1] ?? value.match(/(\d{15,})/)?.[1] ?? "";
 }
 
+function confirmAction(message: string) {
+  return window.confirm(message);
+}
+
+function dataUrlToBlob(dataUrl: string) {
+  const [header, body] = dataUrl.split(",");
+  const mime = header.match(/data:(.*?);base64/)?.[1] ?? "application/octet-stream";
+  const bytes = Uint8Array.from(atob(body), (char) => char.charCodeAt(0));
+  return new Blob([bytes], { type: mime });
+}
+
+async function migrateAsset(asset: MediaAsset) {
+  if (!asset.url.startsWith("data:")) return asset;
+
+  const id = `${Date.now()}-${crypto.randomUUID()}-${asset.name}`;
+  await saveMediaFile(id, new File([dataUrlToBlob(asset.url)], asset.name));
+  return { ...asset, id, url: `idb:${id}` };
+}
+
+async function migrateMediaConfig(config: ManagedConfig) {
+  return {
+    ...config,
+    posts: await Promise.all(config.posts.map(async (post) => ({
+      ...post,
+      media: post.media ? await migrateAsset(post.media) : undefined
+    }))),
+    mediaAssets: await Promise.all(config.mediaAssets.map(migrateAsset))
+  };
+}
+
+function AdminMediaPreview({ asset, alt }: { asset: MediaAsset; alt: string }) {
+  const [src, setSrc] = useState("");
+
+  useEffect(() => {
+    let objectUrl = "";
+    resolveMediaUrl(asset.url).then((resolved) => {
+      objectUrl = resolved.startsWith("blob:") ? resolved : "";
+      setSrc(resolved);
+    });
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [asset.url]);
+
+  if (!src) return <div className="post-preview-empty">Media loading</div>;
+
+  return asset.type === "video" || asset.type === "animation" ? (
+    <video src={src} muted loop autoPlay playsInline />
+  ) : (
+    <img src={src} alt={alt} />
+  );
+}
+
 export default function AdminPage() {
   const [config, setConfig] = useState<ManagedConfig>(defaultConfig);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -220,6 +275,7 @@ export default function AdminPage() {
   };
 
   const deletePost = (index: number) => {
+    if (!confirmAction("Delete this post? This removes it from the public site after saving.")) return;
     setConfig((current) => {
       const posts = current.posts.filter((_, postIndex) => postIndex !== index);
       return {
@@ -229,18 +285,44 @@ export default function AdminPage() {
     });
   };
 
-  const save = () => {
-    window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(config));
-    setSavedAt(new Date().toLocaleTimeString());
+  const addPost = () => {
+    if (!confirmAction("Add a new post draft?")) return;
+    setConfig((current) => ({
+      ...current,
+      posts: [
+        ...current.posts,
+        {
+          id: "",
+          kind: "video",
+          label: "",
+          title: "",
+          link: ""
+        }
+      ]
+    }));
+  };
+
+  const save = async () => {
+    if (!confirmAction("Save these admin changes now?")) return;
+    try {
+      const storageSafeConfig = await migrateMediaConfig(config);
+      setConfig(storageSafeConfig);
+      window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(storageSafeConfig));
+      setSavedAt(new Date().toLocaleTimeString());
+    } catch {
+      window.alert("The settings could not be saved. Try removing very large files or refreshing the admin page.");
+    }
   };
 
   const reset = () => {
+    if (!confirmAction("Reset the site configuration to the original defaults?")) return;
     setConfig(defaultConfig);
     window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(defaultConfig));
     setSavedAt(new Date().toLocaleTimeString());
   };
 
   const exportConfig = () => {
+    if (!confirmAction("Export the current site configuration?")) return;
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -262,36 +344,35 @@ export default function AdminPage() {
   };
 
   const logout = () => {
+    if (!confirmAction("Lock the admin dashboard?")) return;
     window.localStorage.removeItem(ADMIN_SESSION_KEY);
     setIsAuthed(false);
   };
 
-  const fileToMediaAsset = (file: File) =>
-    new Promise<MediaAsset>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const mime = file.type;
-        resolve({
-          id: `${Date.now()}-${file.name}`,
-          name: file.name,
-          type: mime.startsWith("video/") ? "video" : mime.includes("gif") ? "animation" : "image",
-          url: String(reader.result),
-          placement: "gallery",
-          caption: file.name.replace(/\.[^.]+$/, "")
-        });
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
+  const fileToMediaAsset = async (file: File) => {
+    const mime = file.type;
+    const id = `${Date.now()}-${crypto.randomUUID()}-${file.name}`;
+    await saveMediaFile(id, file);
+    return {
+      id,
+      name: file.name,
+      type: mime.startsWith("video/") ? "video" : mime.includes("gif") ? "animation" : "image",
+      url: `idb:${id}`,
+      placement: "gallery",
+      caption: file.name.replace(/\.[^.]+$/, "")
+    } satisfies MediaAsset;
+  };
 
   const uploadMedia = async (files: FileList | null) => {
     if (!files?.length) return;
+    if (!confirmAction(`Upload ${files.length} media file${files.length > 1 ? "s" : ""} to the media library?`)) return;
     const uploaded = await Promise.all(Array.from(files).map(fileToMediaAsset));
     setConfig((current) => ({ ...current, mediaAssets: [...uploaded, ...current.mediaAssets] }));
   };
 
   const uploadPostMedia = async (index: number, files: FileList | null) => {
     if (!files?.length) return;
+    if (!confirmAction("Upload this file to the selected post?")) return;
     const media = await fileToMediaAsset(files[0]);
     updatePost(index, "media", media);
   };
@@ -329,15 +410,15 @@ export default function AdminPage() {
       <aside className="admin-sidebar">
         <a className="brand-mark" href="/">Tee Stitches</a>
         <div className="admin-nav">
-          <button type="button" className={activePanel === "brand" ? "active" : ""} onClick={() => setActivePanel("brand")}><Palette size={16} /> Brand</button>
-          <button type="button" className={activePanel === "posts" ? "active" : ""} onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
-          <button type="button" className={activePanel === "media" ? "active" : ""} onClick={() => setActivePanel("media")}><Upload size={16} /> Media</button>
-          <button type="button" className={activePanel === "animation" ? "active" : ""} onClick={() => setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
-          <button type="button" className={activePanel === "booking" ? "active" : ""} onClick={() => setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
-          <button type="button" className={activePanel === "inquiries" ? "active" : ""} onClick={() => setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
-          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Notes</button>
+          <button type="button" className={activePanel === "brand" ? "active" : ""} onClick={() => confirmAction("Open Brand settings?") && setActivePanel("brand")}><Palette size={16} /> Brand</button>
+          <button type="button" className={activePanel === "posts" ? "active" : ""} onClick={() => confirmAction("Open Posts manager?") && setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
+          <button type="button" className={activePanel === "media" ? "active" : ""} onClick={() => confirmAction("Open Media manager?") && setActivePanel("media")}><Upload size={16} /> Media</button>
+          <button type="button" className={activePanel === "animation" ? "active" : ""} onClick={() => confirmAction("Open Animation settings?") && setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
+          <button type="button" className={activePanel === "booking" ? "active" : ""} onClick={() => confirmAction("Open Booking settings?") && setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
+          <button type="button" className={activePanel === "inquiries" ? "active" : ""} onClick={() => confirmAction("Open Inquiries?") && setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
+          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => confirmAction("Open Production notes?") && setActivePanel("notes")}><Settings size={16} /> Notes</button>
           <a href="/"><Eye size={16} /> View site</a>
-          <button type="button" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
+          <button type="button" onClick={() => confirmAction("Switch admin theme?") && setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
         </div>
       </aside>
 
@@ -407,11 +488,7 @@ export default function AdminPage() {
               <article className="post-row" key={`${post.id}-${index}`}>
                 <div className="post-preview">
                   {post.media ? (
-                    post.media.type === "video" || post.media.type === "animation" ? (
-                      <video src={post.media.url} muted loop autoPlay playsInline />
-                    ) : (
-                      <img src={post.media.url} alt={post.media.caption || post.title} />
-                    )
+                    <AdminMediaPreview asset={post.media} alt={post.media.caption || post.title} />
                   ) : post.id ? (
                     <iframe src={`https://www.tiktok.com/embed/v2/${post.id}`} title={post.title} loading="lazy" />
                   ) : (
@@ -438,7 +515,7 @@ export default function AdminPage() {
                       <input type="file" accept="image/*,video/*,.gif,.webp" onChange={(event) => uploadPostMedia(index, event.target.files)} />
                     </label>
                     {post.media && (
-                      <button type="button" className="secondary-button" onClick={() => updatePost(index, "media", undefined)}>
+                      <button type="button" className="secondary-button" onClick={() => confirmAction("Remove media from this post?") && updatePost(index, "media", undefined)}>
                         <Trash2 size={18} /> Remove media
                       </button>
                     )}
@@ -454,19 +531,7 @@ export default function AdminPage() {
             <button
               type="button"
               className="secondary-button"
-              onClick={() => setConfig((current) => ({
-                ...current,
-                posts: [
-                  ...current.posts,
-                  {
-                    id: "",
-                    kind: "video",
-                    label: "",
-                    title: "",
-                    link: ""
-                  }
-                ]
-              }))}
+              onClick={addPost}
             >
               <Plus size={18} /> Add post
             </button>
@@ -493,11 +558,7 @@ export default function AdminPage() {
               config.mediaAssets.map((asset, index) => (
                 <article className="asset-card" key={asset.id}>
                   <div className="asset-preview">
-                    {asset.type === "video" || asset.type === "animation" ? (
-                      <video src={asset.url} muted loop autoPlay playsInline />
-                    ) : (
-                      <img src={asset.url} alt={asset.caption || asset.name} />
-                    )}
+                    <AdminMediaPreview asset={asset} alt={asset.caption || asset.name} />
                   </div>
                   <label>Caption<input value={asset.caption} onChange={(event) => updateAsset(index, "caption", event.target.value)} /></label>
                   <label>Display location
@@ -515,7 +576,7 @@ export default function AdminPage() {
                   <button
                     type="button"
                     className="secondary-button"
-                    onClick={() => setConfig((current) => ({
+                    onClick={() => confirmAction("Remove this uploaded media item?") && setConfig((current) => ({
                       ...current,
                       mediaAssets: current.mediaAssets.filter((_, assetIndex) => assetIndex !== index)
                     }))}
@@ -561,7 +622,7 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
-            <button type="button" className="secondary-button" onClick={() => { window.localStorage.removeItem(INQUIRIES_KEY); setInquiries([]); }}>
+            <button type="button" className="secondary-button" onClick={() => { if (!confirmAction("Clear all local booking leads?")) return; window.localStorage.removeItem(INQUIRIES_KEY); setInquiries([]); }}>
               <Trash2 size={18} /> Clear local leads
             </button>
           </section>}

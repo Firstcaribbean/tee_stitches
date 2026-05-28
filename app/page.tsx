@@ -19,6 +19,7 @@ import {
   Upload,
   Wand2
 } from "lucide-react";
+import { resolveMediaUrl } from "./media-store";
 
 const ADMIN_STORAGE_KEY = "tee-stitches-admin-config";
 const WHATSAPP_NUMBER = "2348000000000";
@@ -209,6 +210,10 @@ const tracker = ["Order Received", "Design Started", "Sewing in Progress", "Read
 type PublicPage = "home" | "collections" | "lookbook" | "gallery" | "booking";
 type ThemeMode = "dark" | "light";
 
+function confirmAction(message: string) {
+  return window.confirm(message);
+}
+
 function FabricScene() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -369,17 +374,37 @@ function MediaDisplay({
   compact?: boolean;
 }) {
   const media = asset ?? fallback?.media;
+  const [src, setSrc] = useState("");
+
+  useEffect(() => {
+    if (!media) {
+      setSrc("");
+      return;
+    }
+
+    let objectUrl = "";
+    resolveMediaUrl(media.url).then((resolved) => {
+      objectUrl = resolved.startsWith("blob:") ? resolved : "";
+      setSrc(resolved);
+    });
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [media?.url]);
 
   if (!media) {
     return fallback ? <TikTokEmbed post={fallback} title={title} compact={compact} /> : <div className={compact ? "empty-showcase compact" : "empty-showcase"}>Media coming soon</div>;
   }
 
+  if (!src) return <div className={compact ? "empty-showcase compact" : "empty-showcase"}>Media loading</div>;
+
   return (
     <div className={compact ? "managed-media compact" : "managed-media"}>
       {media.type === "video" || media.type === "animation" ? (
-        <video src={media.url} autoPlay loop muted playsInline controls={!compact} />
+        <video src={src} autoPlay loop muted playsInline controls={!compact} />
       ) : (
-        <img src={media.url} alt={media.caption || media.name} />
+        <img src={src} alt={media.caption || media.name} />
       )}
       {(media.caption || media.name) && <span>{media.caption || media.name}</span>}
     </div>
@@ -391,6 +416,7 @@ function BookingForm({ booking }: { booking: ManagedConfig["booking"] }) {
 
   const submitBooking = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!confirmAction("Submit this booking and open WhatsApp?")) return;
     const form = new FormData(event.currentTarget);
     const message = `Hello Tee Stitches, I want to book ${bookingType}. Name: ${form.get("name")}. Date: ${form.get("date")}. Notes: ${form.get("notes")}`;
     const inquiry = {
@@ -483,7 +509,7 @@ function OrderForm({ categories }: { categories: string[] }) {
           </div>
         ))}
       </div>
-      <button className="secondary-button" type="button">
+      <button className="secondary-button" type="button" onClick={() => confirmAction("Preview this order journey?")}>
         <Wand2 size={18} />
         Preview order journey
       </button>
@@ -516,6 +542,9 @@ export default function Home() {
     ...look,
     post: managedPosts[index]
   }));
+  const openPage = (page: PublicPage, label: string) => {
+    if (confirmAction(`Open ${label}?`)) setActivePage(page);
+  };
 
   useEffect(() => {
     const loadConfig = () => {
@@ -581,14 +610,14 @@ export default function Home() {
       {managedConfig.animation.loader && <IntroLoader />}
       <LuxuryCursor enabled={managedConfig.animation.cursor} />
       <nav className="top-nav">
-        <button className="brand-mark nav-button" onClick={() => setActivePage("home")}>{managedConfig.brand.shortName}</button>
+        <button className="brand-mark nav-button" onClick={() => openPage("home", "Home")}>{managedConfig.brand.shortName}</button>
         <div>
-          <button className={activePage === "collections" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("collections")}>Collections</button>
-          <button className={activePage === "lookbook" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("lookbook")}>Lookbook</button>
-          <button className={activePage === "gallery" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("gallery")}>Gallery</button>
-          <button className={activePage === "booking" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("booking")}>Book</button>
+          <button className={activePage === "collections" ? "nav-button active" : "nav-button"} onClick={() => openPage("collections", "Collections")}>Collections</button>
+          <button className={activePage === "lookbook" ? "nav-button active" : "nav-button"} onClick={() => openPage("lookbook", "Lookbook")}>Lookbook</button>
+          <button className={activePage === "gallery" ? "nav-button active" : "nav-button"} onClick={() => openPage("gallery", "Gallery")}>Gallery</button>
+          <button className={activePage === "booking" ? "nav-button active" : "nav-button"} onClick={() => openPage("booking", "Booking")}>Book</button>
           <a href="/admin">Admin</a>
-          <button className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} aria-label="Switch theme">
+          <button className="theme-toggle" onClick={() => confirmAction("Switch site theme?") && setTheme((current) => current === "dark" ? "light" : "dark")} aria-label="Switch theme">
             <SunMoon size={16} />
             {theme}
           </button>
@@ -609,7 +638,7 @@ export default function Home() {
           <h1>{managedConfig.brand.name}</h1>
           <p className="tagline">{managedConfig.brand.tagline}</p>
           <div className="hero-actions">
-            <button className="primary-button" onClick={() => setActivePage("collections")}>
+            <button className="primary-button" onClick={() => openPage("collections", "Collections")}>
               View Real Work
               <ChevronRight size={18} />
             </button>
@@ -672,7 +701,7 @@ export default function Home() {
             <motion.button
               className="collection-card reveal"
               key={item.name}
-              onClick={() => setActiveCollection(item)}
+              onClick={() => confirmAction(`Open ${item.name} collection?`) && setActiveCollection(item)}
               whileHover={{ y: -12, scale: 1.015 }}
               transition={{ type: "spring", stiffness: 130, damping: 18 }}
             >
@@ -852,14 +881,14 @@ export default function Home() {
         </div>
         <form className="newsletter">
           <input placeholder="Email for collection drops" type="email" />
-          <button aria-label="Subscribe" type="button"><Send size={18} /></button>
+          <button aria-label="Subscribe" type="button" onClick={() => confirmAction("Subscribe this email for collection drops?")}><Send size={18} /></button>
         </form>
       </footer>
 
       <AnimatePresence>
         {activeCollection && (
           <motion.div className="modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <button className="modal-close" onClick={() => setActiveCollection(null)}>Close</button>
+            <button className="modal-close" onClick={() => confirmAction("Close this collection view?") && setActiveCollection(null)}>Close</button>
             <div className="modal-tiktok">
               <MediaDisplay fallback={activeCollection.post} title={`${activeCollection.name} real work showcase`} />
             </div>
