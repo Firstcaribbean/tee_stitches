@@ -308,6 +308,41 @@ h2,
   min-height: 100%;
 }
 
+.managed-media {
+  position: relative;
+  width: 100%;
+  min-height: 42rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 248, 238, 0.15);
+  border-radius: 0.75rem;
+  background: #050303;
+  box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.48);
+}
+
+.managed-media.compact {
+  height: 100%;
+  min-height: 100%;
+}
+
+.managed-media video,
+.managed-media img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  display: block;
+}
+
+.managed-media span {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  color: var(--ivory);
+  font-size: 0.85rem;
+  text-shadow: 0 0.5rem 1.5rem #000;
+}
+
 .section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
@@ -330,7 +365,8 @@ h2 {
   box-shadow: 0 3rem 6rem rgba(0, 0, 0, 0.38);
 }
 
-.portrait .tiktok-embed-frame {
+.portrait .tiktok-embed-frame,
+.portrait .managed-media {
   height: 100%;
   min-height: 38rem;
 }
@@ -792,7 +828,8 @@ footer p {
   box-shadow: 0 3rem 8rem rgba(0, 0, 0, 0.58);
 }
 
-.modal-tiktok .tiktok-embed-frame {
+.modal-tiktok .tiktok-embed-frame,
+.modal-tiktok .managed-media {
   min-height: 76vh;
 }
 
@@ -846,6 +883,39 @@ footer p {
   background:
     radial-gradient(circle at 85% 0%, rgba(215, 180, 106, 0.12), transparent 28rem),
     #060403;
+}
+
+.admin-login {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 70% 10%, rgba(215, 180, 106, 0.14), transparent 24rem),
+    #050303;
+}
+
+.admin-login-card {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 32rem);
+  padding: clamp(1.4rem, 4vw, 2.4rem);
+  border: 1px solid rgba(255, 248, 238, 0.12);
+  border-radius: 0.65rem;
+  background: rgba(255, 248, 238, 0.055);
+  backdrop-filter: blur(20px);
+}
+
+.admin-login-card h1 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  line-height: 0.9;
+  font-weight: 500;
+}
+
+.admin-error {
+  color: #ffb7b7;
 }
 
 .admin-sidebar {
@@ -1027,6 +1097,40 @@ footer p {
   font-size: 0.78rem;
 }
 
+.admin-upload {
+  cursor: pointer;
+}
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.asset-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 248, 238, 0.1);
+  border-radius: 0.55rem;
+  background: rgba(7, 5, 4, 0.46);
+}
+
+.asset-preview {
+  height: 18rem;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  background: #000;
+}
+
+.asset-preview img,
+.asset-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 @media (max-width: 1050px) {
   .collection-grid,
   .lookbook-stage {
@@ -1041,7 +1145,8 @@ footer p {
   footer,
   .admin-shell,
   .admin-grid,
-  .post-row {
+  .post-row,
+  .asset-grid {
     grid-template-columns: 1fr;
   }
 

@@ -20,6 +20,8 @@ import {
 
 const ADMIN_STORAGE_KEY = "tee-stitches-admin-config";
 const INQUIRIES_KEY = "tee-stitches-inquiries";
+const ADMIN_SESSION_KEY = "tee-stitches-admin-session";
+const ADMIN_PASSCODE = "tee-stitches-admin";
 
 type ManagedPost = {
   id: string;
@@ -29,6 +31,23 @@ type ManagedPost = {
   link: string;
   thumbnail?: string;
   featured?: boolean;
+};
+
+type MediaAsset = {
+  id: string;
+  name: string;
+  type: "image" | "video" | "animation";
+  url: string;
+  placement:
+    | "hero-main"
+    | "about-portrait"
+    | "gallery"
+    | "collection-bridal"
+    | "collection-gowns"
+    | "collection-ready"
+    | "collection-native"
+    | "collection-runway";
+  caption: string;
 };
 
 type ManagedConfig = {
@@ -54,6 +73,7 @@ type ManagedConfig = {
     fabricScene: boolean;
   };
   posts: ManagedPost[];
+  mediaAssets: MediaAsset[];
 };
 
 type Inquiry = {
@@ -87,6 +107,7 @@ const defaultConfig: ManagedConfig = {
     cursor: true,
     fabricScene: true
   },
+  mediaAssets: [],
   posts: [
     {
       id: "7642702852510534933",
@@ -141,7 +162,8 @@ function mergeConfig(config: Partial<ManagedConfig>): ManagedConfig {
     brand: { ...defaultConfig.brand, ...config.brand },
     booking: { ...defaultConfig.booking, ...config.booking },
     animation: { ...defaultConfig.animation, ...config.animation },
-    posts: config.posts?.length ? config.posts : defaultConfig.posts
+    posts: config.posts?.length ? config.posts : defaultConfig.posts,
+    mediaAssets: config.mediaAssets?.length ? config.mediaAssets : []
   };
 }
 
@@ -149,9 +171,13 @@ export default function AdminPage() {
   const [config, setConfig] = useState<ManagedConfig>(defaultConfig);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [savedAt, setSavedAt] = useState<string>("");
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [passcode, setPasscode] = useState("");
+  const [authError, setAuthError] = useState("");
   const consultationText = useMemo(() => config.booking.consultationTypes.join(", "), [config.booking.consultationTypes]);
 
   useEffect(() => {
+    setIsAuthed(window.localStorage.getItem(ADMIN_SESSION_KEY) === "active");
     try {
       const saved = window.localStorage.getItem(ADMIN_STORAGE_KEY);
       if (saved) setConfig(mergeConfig(JSON.parse(saved)));
@@ -200,6 +226,76 @@ export default function AdminPage() {
     URL.revokeObjectURL(url);
   };
 
+  const login = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (passcode === ADMIN_PASSCODE) {
+      window.localStorage.setItem(ADMIN_SESSION_KEY, "active");
+      setIsAuthed(true);
+      setAuthError("");
+    } else {
+      setAuthError("Incorrect admin passcode.");
+    }
+  };
+
+  const logout = () => {
+    window.localStorage.removeItem(ADMIN_SESSION_KEY);
+    setIsAuthed(false);
+  };
+
+  const uploadMedia = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const uploaded = await Promise.all(
+      Array.from(files).map(
+        (file) =>
+          new Promise<MediaAsset>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const mime = file.type;
+              resolve({
+                id: `${Date.now()}-${file.name}`,
+                name: file.name,
+                type: mime.startsWith("video/") ? "video" : mime.includes("gif") ? "animation" : "image",
+                url: String(reader.result),
+                placement: "gallery",
+                caption: file.name.replace(/\.[^.]+$/, "")
+              });
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+          })
+      )
+    );
+    setConfig((current) => ({ ...current, mediaAssets: [...uploaded, ...current.mediaAssets] }));
+  };
+
+  const updateAsset = (index: number, key: keyof MediaAsset, value: string) => {
+    setConfig((current) => ({
+      ...current,
+      mediaAssets: current.mediaAssets.map((asset, assetIndex) =>
+        assetIndex === index ? { ...asset, [key]: value } : asset
+      )
+    }));
+  };
+
+  if (!isAuthed) {
+    return (
+      <main className="admin-login">
+        <form className="admin-login-card" onSubmit={login}>
+          <Shield size={28} />
+          <p className="eyebrow">Protected atelier dashboard</p>
+          <h1>Admin access required.</h1>
+          <label>
+            Passcode
+            <input type="password" value={passcode} onChange={(event) => setPasscode(event.target.value)} placeholder="Enter admin passcode" />
+          </label>
+          {authError && <p className="admin-error">{authError}</p>}
+          <button className="primary-button" type="submit">Unlock dashboard</button>
+          <p className="admin-empty">Default local passcode: tee-stitches-admin. Replace with real auth before production handover.</p>
+        </form>
+      </main>
+    );
+  }
+
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
@@ -207,6 +303,7 @@ export default function AdminPage() {
         <div className="admin-nav">
           <a href="#brand"><Palette size={16} /> Brand</a>
           <a href="#posts"><Clapperboard size={16} /> Posts</a>
+          <a href="#media"><Upload size={16} /> Media</a>
           <a href="#animation"><Wand2 size={16} /> Animations</a>
           <a href="#booking"><CalendarDays size={16} /> Booking</a>
           <a href="#inquiries"><Activity size={16} /> Inquiries</a>
@@ -222,6 +319,7 @@ export default function AdminPage() {
             <button className="primary-button" onClick={save}><Save size={18} /> Save changes</button>
             <button className="secondary-button" onClick={exportConfig}><Download size={18} /> Export config</button>
             <button className="secondary-button" onClick={reset}><Settings size={18} /> Reset</button>
+            <button className="secondary-button" onClick={logout}><Shield size={18} /> Lock admin</button>
           </div>
           {savedAt && <p className="admin-saved"><Check size={16} /> Saved at {savedAt}. Refresh the public site to see changes.</p>}
         </div>
@@ -319,6 +417,60 @@ export default function AdminPage() {
             <button className="secondary-button" onClick={() => setConfig((current) => ({ ...current, posts: current.posts.slice(0, -1) }))}>
               <Trash2 size={18} /> Remove last
             </button>
+          </div>
+        </section>
+
+        <section id="media" className="admin-panel wide">
+          <div className="admin-panel-head">
+            <Upload size={18} />
+            <h2>Upload Media & Choose Placement</h2>
+          </div>
+          <label className="upload-box admin-upload">
+            <Upload size={24} />
+            Upload JPG, PNG, MP4, GIF, WebP or animation files
+            <input type="file" accept="image/*,video/*,.gif,.webp" multiple onChange={(event) => uploadMedia(event.target.files)} />
+          </label>
+          <p className="admin-empty">
+            Uploaded files can replace the hero showcase, about portrait, collection visuals, or appear in the gallery. This local version stores uploads in the browser; production should move these assets to Supabase/Firebase Storage.
+          </p>
+          <div className="asset-grid">
+            {config.mediaAssets.length === 0 ? (
+              <p className="admin-empty">No uploaded media yet.</p>
+            ) : (
+              config.mediaAssets.map((asset, index) => (
+                <article className="asset-card" key={asset.id}>
+                  <div className="asset-preview">
+                    {asset.type === "video" || asset.type === "animation" ? (
+                      <video src={asset.url} muted loop autoPlay playsInline />
+                    ) : (
+                      <img src={asset.url} alt={asset.caption || asset.name} />
+                    )}
+                  </div>
+                  <label>Caption<input value={asset.caption} onChange={(event) => updateAsset(index, "caption", event.target.value)} /></label>
+                  <label>Display location
+                    <select value={asset.placement} onChange={(event) => updateAsset(index, "placement", event.target.value)}>
+                      <option value="hero-main">Hero main showcase</option>
+                      <option value="about-portrait">About designer visual</option>
+                      <option value="gallery">Gallery wall</option>
+                      <option value="collection-bridal">Collection: Bridal</option>
+                      <option value="collection-gowns">Collection: Luxury gowns</option>
+                      <option value="collection-ready">Collection: Ready-to-wear</option>
+                      <option value="collection-native">Collection: Native styles</option>
+                      <option value="collection-runway">Collection: Runway</option>
+                    </select>
+                  </label>
+                  <button
+                    className="secondary-button"
+                    onClick={() => setConfig((current) => ({
+                      ...current,
+                      mediaAssets: current.mediaAssets.filter((_, assetIndex) => assetIndex !== index)
+                    }))}
+                  >
+                    <Trash2 size={18} /> Remove
+                  </button>
+                </article>
+              ))
+            )}
           </div>
         </section>
 

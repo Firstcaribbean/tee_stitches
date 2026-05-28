@@ -98,6 +98,23 @@ type ManagedPost = {
   featured?: boolean;
 };
 
+type MediaAsset = {
+  id: string;
+  name: string;
+  type: "image" | "video" | "animation";
+  url: string;
+  placement:
+    | "hero-main"
+    | "about-portrait"
+    | "gallery"
+    | "collection-bridal"
+    | "collection-gowns"
+    | "collection-ready"
+    | "collection-native"
+    | "collection-runway";
+  caption: string;
+};
+
 type ManagedConfig = {
   brand: {
     name: string;
@@ -121,6 +138,7 @@ type ManagedConfig = {
     fabricScene: boolean;
   };
   posts: ManagedPost[];
+  mediaAssets: MediaAsset[];
 };
 
 const defaultManagedConfig: ManagedConfig = {
@@ -146,7 +164,8 @@ const defaultManagedConfig: ManagedConfig = {
     cursor: true,
     fabricScene: true
   },
-  posts: tiktokPosts.map((post) => ({ ...post }))
+  posts: tiktokPosts.map((post) => ({ ...post })),
+  mediaAssets: []
 };
 
 const collections = [
@@ -330,6 +349,31 @@ function TikTokEmbed({
   );
 }
 
+function MediaDisplay({
+  asset,
+  fallback,
+  title,
+  compact = false
+}: {
+  asset?: MediaAsset;
+  fallback: ManagedPost;
+  title: string;
+  compact?: boolean;
+}) {
+  if (!asset) return <TikTokEmbed post={fallback} title={title} compact={compact} />;
+
+  return (
+    <div className={compact ? "managed-media compact" : "managed-media"}>
+      {asset.type === "video" || asset.type === "animation" ? (
+        <video src={asset.url} autoPlay loop muted playsInline controls={!compact} />
+      ) : (
+        <img src={asset.url} alt={asset.caption || asset.name} />
+      )}
+      {(asset.caption || asset.name) && <span>{asset.caption || asset.name}</span>}
+    </div>
+  );
+}
+
 function BookingForm({ booking }: { booking: ManagedConfig["booking"] }) {
   const [bookingType, setBookingType] = useState(booking.consultationTypes[0] ?? "Bridal consultation");
 
@@ -449,6 +493,7 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.25]);
   const managedPosts = managedConfig.posts.length ? managedConfig.posts : defaultManagedConfig.posts;
   const mainPost = managedPosts.find((post) => post.featured) ?? managedPosts[0];
+  const fallbackPost = mainPost ?? defaultManagedConfig.posts[0];
   const managedCollections = collections.map((item, index) => ({
     ...item,
     post: managedPosts[index] ?? item.post
@@ -470,7 +515,8 @@ export default function Home() {
             brand: { ...defaultManagedConfig.brand, ...parsed.brand },
             booking: { ...defaultManagedConfig.booking, ...parsed.booking },
             animation: { ...defaultManagedConfig.animation, ...parsed.animation },
-            posts: parsed.posts?.length ? parsed.posts : defaultManagedConfig.posts
+            posts: parsed.posts?.length ? parsed.posts : defaultManagedConfig.posts,
+            mediaAssets: parsed.mediaAssets?.length ? parsed.mediaAssets : []
           });
         }
       } catch {
@@ -481,6 +527,9 @@ export default function Home() {
     window.addEventListener("storage", loadConfig);
     return () => window.removeEventListener("storage", loadConfig);
   }, []);
+
+  const assetFor = (placement: MediaAsset["placement"]) =>
+    managedConfig.mediaAssets.find((asset) => asset.placement === placement);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -558,7 +607,7 @@ export default function Home() {
           transition={{ delay: 1.9, duration: 1.1, ease: "easeOut" }}
         >
           <span>Main Tee Stitches showcase</span>
-          <TikTokEmbed post={mainPost} title="Main Tee Stitches TikTok showcase" />
+          <MediaDisplay asset={assetFor("hero-main")} fallback={fallbackPost} title="Main Tee Stitches showcase" />
         </motion.div>
         <motion.a
           className="tiktok-float"
@@ -579,7 +628,7 @@ export default function Home() {
           <h2>Tailoring emotion into silhouettes for women who want to be remembered softly.</h2>
         </div>
         <div className="portrait reveal">
-          <TikTokEmbed post={tiktokPosts[1]} title="Tee Stitches finished look detail" />
+          <MediaDisplay asset={assetFor("about-portrait")} fallback={managedPosts[1] ?? fallbackPost} title="Tee Stitches finished look detail" />
         </div>
         <div className="story reveal">
           <p>
@@ -607,7 +656,22 @@ export default function Home() {
               transition={{ type: "spring", stiffness: 130, damping: 18 }}
             >
               <div className="collection-embed" aria-hidden="true">
-                <TikTokEmbed post={item.post} title={`${item.name} Tee Stitches TikTok`} compact />
+                <MediaDisplay
+                  asset={assetFor(
+                    index === 0
+                      ? "collection-bridal"
+                      : index === 1
+                        ? "collection-gowns"
+                        : index === 2
+                          ? "collection-ready"
+                          : index === 3
+                            ? "collection-native"
+                            : "collection-runway"
+                  )}
+                  fallback={item.post}
+                  title={`${item.name} Tee Stitches showcase`}
+                  compact
+                />
               </div>
               <span>0{index + 1}</span>
               <div>
@@ -704,6 +768,15 @@ export default function Home() {
           <h2>Actual Tee Stitches posts, framed as a digital atelier wall.</h2>
         </div>
         <div className="tiktok-gallery">
+          {managedConfig.mediaAssets.filter((asset) => asset.placement === "gallery").map((asset) => (
+            <motion.article className="gallery-post reveal" key={asset.id} whileHover={{ y: -8 }}>
+              <div className="gallery-post-media">
+                <MediaDisplay asset={asset} fallback={fallbackPost} title={asset.caption || asset.name} compact />
+              </div>
+              <p>Uploaded media</p>
+              <h3>{asset.caption || asset.name}</h3>
+            </motion.article>
+          ))}
           {managedPosts.map((post) => (
             <motion.article className={"featured" in post ? "gallery-post reveal featured" : "gallery-post reveal"} key={post.id} whileHover={{ y: -8 }}>
               <div className="gallery-post-media">
@@ -761,7 +834,7 @@ export default function Home() {
           <motion.div className="modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <button className="modal-close" onClick={() => setActiveCollection(null)}>Close</button>
             <div className="modal-tiktok">
-              <TikTokEmbed post={activeCollection.post} title={`${activeCollection.name} real work showcase`} />
+              <MediaDisplay fallback={activeCollection.post} title={`${activeCollection.name} real work showcase`} />
             </div>
             <div className="modal-caption">
               <p className="eyebrow">Real Tee Stitches work</p>
