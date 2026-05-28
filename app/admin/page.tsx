@@ -13,6 +13,7 @@ import {
   Save,
   Settings,
   Shield,
+  SunMoon,
   Trash2,
   Upload,
   Wand2
@@ -84,6 +85,9 @@ type Inquiry = {
   notes: string;
   createdAt: string;
 };
+
+type AdminPageKey = "brand" | "animation" | "posts" | "media" | "booking" | "inquiries" | "notes";
+type ThemeMode = "dark" | "light";
 
 const defaultConfig: ManagedConfig = {
   brand: {
@@ -163,15 +167,21 @@ function mergeConfig(config: Partial<ManagedConfig>): ManagedConfig {
     brand: { ...defaultConfig.brand, ...config.brand },
     booking: { ...defaultConfig.booking, ...config.booking },
     animation: { ...defaultConfig.animation, ...config.animation },
-    posts: config.posts?.length ? config.posts : defaultConfig.posts,
+    posts: Array.isArray(config.posts) ? config.posts : defaultConfig.posts,
     mediaAssets: config.mediaAssets?.length ? config.mediaAssets : []
   };
+}
+
+function extractTikTokId(value: string) {
+  return value.match(/(?:video|photo)\/(\d+)/)?.[1] ?? value.match(/(\d{15,})/)?.[1] ?? "";
 }
 
 export default function AdminPage() {
   const [config, setConfig] = useState<ManagedConfig>(defaultConfig);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [savedAt, setSavedAt] = useState<string>("");
+  const [activePanel, setActivePanel] = useState<AdminPageKey>("brand");
+  const [theme, setTheme] = useState<ThemeMode>("dark");
   const [isAuthed, setIsAuthed] = useState(false);
   const [passcode, setPasscode] = useState("");
   const [authError, setAuthError] = useState("");
@@ -200,6 +210,9 @@ export default function AdminPage() {
     setConfig((current) => {
       const posts = current.posts.map((post, postIndex) => {
         if (key === "featured") return { ...post, featured: postIndex === index ? Boolean(value) : false };
+        if (key === "link" && postIndex === index && typeof value === "string") {
+          return { ...post, link: value, id: extractTikTokId(value) || post.id };
+        }
         return postIndex === index ? { ...post, [key]: value } : post;
       });
       return { ...current, posts };
@@ -312,21 +325,23 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="admin-shell">
+    <main className={`admin-shell theme-${theme}`}>
       <aside className="admin-sidebar">
         <a className="brand-mark" href="/">Tee Stitches</a>
         <div className="admin-nav">
-          <a href="#brand"><Palette size={16} /> Brand</a>
-          <a href="#posts"><Clapperboard size={16} /> Posts</a>
-          <a href="#media"><Upload size={16} /> Media</a>
-          <a href="#animation"><Wand2 size={16} /> Animations</a>
-          <a href="#booking"><CalendarDays size={16} /> Booking</a>
-          <a href="#inquiries"><Activity size={16} /> Inquiries</a>
+          <button className={activePanel === "brand" ? "active" : ""} onClick={() => setActivePanel("brand")}><Palette size={16} /> Brand</button>
+          <button className={activePanel === "posts" ? "active" : ""} onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
+          <button className={activePanel === "media" ? "active" : ""} onClick={() => setActivePanel("media")}><Upload size={16} /> Media</button>
+          <button className={activePanel === "animation" ? "active" : ""} onClick={() => setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
+          <button className={activePanel === "booking" ? "active" : ""} onClick={() => setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
+          <button className={activePanel === "inquiries" ? "active" : ""} onClick={() => setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
+          <button className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Notes</button>
           <a href="/"><Eye size={16} /> View site</a>
+          <button onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
         </div>
       </aside>
 
-      <section className="admin-main">
+      <section className="admin-main" data-admin-page={activePanel}>
         <div className="admin-hero">
           <p className="eyebrow">Private fashion house control room</p>
           <h1>Manage the brand experience without touching code.</h1>
@@ -339,7 +354,7 @@ export default function AdminPage() {
           {savedAt && <p className="admin-saved"><Check size={16} /> Saved at {savedAt}. Refresh the public site to see changes.</p>}
         </div>
 
-        <div className="admin-grid">
+        <div className="admin-grid admin-page-group settings-pages">
           <section id="brand" className="admin-panel">
             <div className="admin-panel-head">
               <Palette size={18} />
@@ -382,7 +397,7 @@ export default function AdminPage() {
           </section>
         </div>
 
-        <section id="posts" className="admin-panel wide">
+        <section id="posts" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Clapperboard size={18} />
             <h2>TikTok & Showcase Posts</h2>
@@ -409,8 +424,8 @@ export default function AdminPage() {
                     <label>Label<input value={post.label} onChange={(event) => updatePost(index, "label", event.target.value)} /></label>
                   </div>
                   <div className="two-col">
-                    <label>TikTok ID<input value={post.id} onChange={(event) => updatePost(index, "id", event.target.value)} /></label>
-                    <label>Link<input value={post.link} onChange={(event) => updatePost(index, "link", event.target.value)} /></label>
+                    <label>Link<input value={post.link} onChange={(event) => updatePost(index, "link", event.target.value)} placeholder="Optional TikTok link" /></label>
+                    <label>Media source<input value={post.media ? post.media.name : post.id ? "TikTok link connected" : "No media selected"} readOnly /></label>
                   </div>
                   <label className="admin-toggle">
                     <input type="checkbox" checked={Boolean(post.featured)} onChange={(event) => updatePost(index, "featured", event.target.checked)} />
@@ -445,8 +460,8 @@ export default function AdminPage() {
                   {
                     id: "",
                     kind: "video",
-                    label: "New showcase",
-                    title: "New Tee Stitches work",
+                    label: "",
+                    title: "",
                     link: ""
                   }
                 ]
@@ -457,7 +472,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <section id="media" className="admin-panel wide">
+        <section id="media" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Upload size={18} />
             <h2>Upload Media & Choose Placement</h2>
@@ -511,7 +526,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <div className="admin-grid">
+        <div className="admin-grid admin-page-group booking-pages">
           <section id="booking" className="admin-panel">
             <div className="admin-panel-head">
               <CalendarDays size={18} />
@@ -550,7 +565,7 @@ export default function AdminPage() {
           </section>
         </div>
 
-        <section className="admin-panel wide">
+        <section id="notes" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Upload size={18} />
             <h2>Production Notes</h2>

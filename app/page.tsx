@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Send,
   Sparkles,
+  SunMoon,
   Upload,
   Wand2
 } from "lucide-react";
@@ -205,6 +206,8 @@ const looks = [
 ];
 
 const tracker = ["Order Received", "Design Started", "Sewing in Progress", "Ready for Delivery", "Delivered"];
+type PublicPage = "home" | "collections" | "lookbook" | "gallery" | "booking";
+type ThemeMode = "dark" | "light";
 
 function FabricScene() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -361,13 +364,15 @@ function MediaDisplay({
   compact = false
 }: {
   asset?: MediaAsset;
-  fallback: ManagedPost;
+  fallback?: ManagedPost;
   title: string;
   compact?: boolean;
 }) {
-  const media = asset ?? fallback.media;
+  const media = asset ?? fallback?.media;
 
-  if (!media) return <TikTokEmbed post={fallback} title={title} compact={compact} />;
+  if (!media) {
+    return fallback ? <TikTokEmbed post={fallback} title={title} compact={compact} /> : <div className={compact ? "empty-showcase compact" : "empty-showcase"}>Media coming soon</div>;
+  }
 
   return (
     <div className={compact ? "managed-media compact" : "managed-media"}>
@@ -487,10 +492,12 @@ function OrderForm({ categories }: { categories: string[] }) {
 }
 
 export default function Home() {
+  const [activePage, setActivePage] = useState<PublicPage>("home");
+  const [theme, setTheme] = useState<ThemeMode>("dark");
   const [activeCollection, setActiveCollection] = useState<{
     name: string;
     mood: string;
-    post: ManagedPost;
+    post?: ManagedPost;
   } | null>(null);
   const [managedConfig, setManagedConfig] = useState<ManagedConfig>(defaultManagedConfig);
   const heroRef = useRef<HTMLElement>(null);
@@ -498,16 +505,16 @@ export default function Home() {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.18]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.25]);
-  const managedPosts = managedConfig.posts.length ? managedConfig.posts : defaultManagedConfig.posts;
+  const managedPosts = managedConfig.posts;
   const mainPost = managedPosts.find((post) => post.featured) ?? managedPosts[0];
-  const fallbackPost = mainPost ?? defaultManagedConfig.posts[0];
+  const fallbackPost = mainPost;
   const managedCollections = collections.map((item, index) => ({
     ...item,
-    post: managedPosts[index] ?? item.post
+    post: managedPosts[index]
   }));
   const managedLooks = looks.map((look, index) => ({
     ...look,
-    post: managedPosts[index] ?? look.post
+    post: managedPosts[index]
   }));
 
   useEffect(() => {
@@ -522,7 +529,7 @@ export default function Home() {
             brand: { ...defaultManagedConfig.brand, ...parsed.brand },
             booking: { ...defaultManagedConfig.booking, ...parsed.booking },
             animation: { ...defaultManagedConfig.animation, ...parsed.animation },
-            posts: parsed.posts?.length ? parsed.posts : defaultManagedConfig.posts,
+            posts: Array.isArray(parsed.posts) ? parsed.posts : defaultManagedConfig.posts,
             mediaAssets: parsed.mediaAssets?.length ? parsed.mediaAssets : []
           });
         }
@@ -570,20 +577,25 @@ export default function Home() {
   }, []);
 
   return (
-    <main className={`motion-${managedConfig.animation.intensity}`}>
+    <main className={`public-paged motion-${managedConfig.animation.intensity} theme-${theme}`} data-public-page={activePage}>
       {managedConfig.animation.loader && <IntroLoader />}
       <LuxuryCursor enabled={managedConfig.animation.cursor} />
       <nav className="top-nav">
-        <a href="#home" className="brand-mark">{managedConfig.brand.shortName}</a>
+        <button className="brand-mark nav-button" onClick={() => setActivePage("home")}>{managedConfig.brand.shortName}</button>
         <div>
-          <a href="#collections">Collections</a>
-          <a href="#lookbook">Lookbook</a>
-          <a href="#booking">Book</a>
+          <button className={activePage === "collections" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("collections")}>Collections</button>
+          <button className={activePage === "lookbook" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("lookbook")}>Lookbook</button>
+          <button className={activePage === "gallery" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("gallery")}>Gallery</button>
+          <button className={activePage === "booking" ? "nav-button active" : "nav-button"} onClick={() => setActivePage("booking")}>Book</button>
           <a href="/admin">Admin</a>
+          <button className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} aria-label="Switch theme">
+            <SunMoon size={16} />
+            {theme}
+          </button>
         </div>
       </nav>
 
-      <section id="home" ref={heroRef} className="hero">
+      <section id="home" ref={heroRef} className="hero page-section page-home">
         <motion.div className="hero-atmosphere" style={{ scale: heroScale, opacity: heroOpacity }} />
         {managedConfig.animation.fabricScene && <FabricScene />}
         <div className="hero-overlay" />
@@ -597,14 +609,16 @@ export default function Home() {
           <h1>{managedConfig.brand.name}</h1>
           <p className="tagline">{managedConfig.brand.tagline}</p>
           <div className="hero-actions">
-            <a className="primary-button" href="#collections">
+            <button className="primary-button" onClick={() => setActivePage("collections")}>
               View Real Work
               <ChevronRight size={18} />
-            </a>
-            <a className="secondary-button" href={mainPost.link} target="_blank" rel="noreferrer">
-              Main Showcase
-              <ArrowUpRight size={18} />
-            </a>
+            </button>
+            {mainPost?.link && (
+              <a className="secondary-button" href={mainPost.link} target="_blank" rel="noreferrer">
+                Main Showcase
+                <ArrowUpRight size={18} />
+              </a>
+            )}
           </div>
         </motion.div>
         <motion.div
@@ -629,7 +643,7 @@ export default function Home() {
         </motion.a>
       </section>
 
-      <section className="about section-grid">
+      <section className="about section-grid page-section page-home">
         <div className="reveal">
           <p className="eyebrow">About the designer</p>
           <h2>Tailoring emotion into silhouettes for women who want to be remembered softly.</h2>
@@ -648,7 +662,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="collections" className="collections">
+      <section id="collections" className="collections page-section page-collections">
         <div className="section-heading reveal">
           <p className="eyebrow">Featured collections</p>
           <h2>Five doors into the atelier.</h2>
@@ -690,7 +704,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="lookbook" ref={lookbookRef} className="lookbook">
+      <section id="lookbook" ref={lookbookRef} className="lookbook page-section page-lookbook">
         <div className="section-heading reveal">
           <p className="eyebrow">Interactive lookbook</p>
           <h2>Scroll like a private runway.</h2>
@@ -715,7 +729,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="tiktok-section section-grid">
+      <section className="tiktok-section section-grid page-section page-gallery">
         <div className="reveal">
           <p className="eyebrow">TikTok atelier</p>
           <h2>Her actual TikTok work, curated like a luxury house reel.</h2>
@@ -724,17 +738,21 @@ export default function Home() {
             <ArrowUpRight size={18} />
           </a>
         </div>
-        <div className="phone-stack reveal">
-          {managedPosts.slice(0, 3).map((post) => (
-            <div className="phone-card" key={post.id}>
-              <MediaDisplay fallback={post} title={post.title} compact />
-              <span>{post.label}</span>
-            </div>
-          ))}
-        </div>
+        {managedPosts.length > 0 ? (
+          <div className="phone-stack reveal">
+            {managedPosts.slice(0, 3).map((post, index) => (
+              <div className="phone-card" key={`${post.id || post.title}-${index}`}>
+                <MediaDisplay fallback={post} title={post.title || "Tee Stitches showcase"} compact />
+                <span>{post.label || "Showcase"}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="glass-panel empty-content reveal">No post videos are published yet.</div>
+        )}
       </section>
 
-      <section className="transformations">
+      <section className="transformations page-section page-gallery">
         <div className="section-heading reveal">
           <p className="eyebrow">Client transformations</p>
           <h2>From idea to entrance.</h2>
@@ -750,7 +768,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="booking" className="booking section-grid">
+      <section id="booking" className="booking section-grid page-section page-booking">
         <div className="reveal">
           <p className="eyebrow">Booking system</p>
           <h2>Reserve the private fitting moment.</h2>
@@ -761,7 +779,7 @@ export default function Home() {
         <BookingForm booking={managedConfig.booking} />
       </section>
 
-      <section className="orders section-grid">
+      <section className="orders section-grid page-section page-booking">
         <div className="reveal">
           <p className="eyebrow">Custom order system</p>
           <h2>Build the outfit brief like a digital couture dossier.</h2>
@@ -769,7 +787,7 @@ export default function Home() {
         <OrderForm categories={managedCollections.map((item) => item.name)} />
       </section>
 
-      <section className="gallery-section">
+      <section className="gallery-section page-section page-gallery">
         <div className="section-heading reveal">
           <p className="eyebrow">Gallery</p>
           <h2>Actual Tee Stitches posts, framed as a digital atelier wall.</h2>
@@ -802,7 +820,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="social-proof">
+      <section className="social-proof page-section page-gallery">
         <div className="stat reveal">
           <span>1.4K+</span>
           <p>TikTok followers</p>

@@ -158,10 +158,101 @@ h2,
   backdrop-filter: blur(16px);
 }
 
-.top-nav a {
+.top-nav a,
+.nav-button {
   text-decoration: none;
   color: rgba(255, 248, 238, 0.78);
   font-size: 0.85rem;
+}
+
+.nav-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.nav-button.active,
+.top-nav a:hover,
+.nav-button:hover {
+  color: var(--champagne);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgba(215, 180, 106, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 248, 238, 0.07);
+  color: rgba(255, 248, 238, 0.78);
+  font-size: 0.78rem;
+}
+
+.theme-light {
+  color: #2d1c15;
+  background: #f6eee6;
+}
+
+.theme-light .top-nav,
+.theme-light.admin-shell,
+.theme-light .admin-sidebar {
+  background: rgba(246, 238, 230, 0.94);
+}
+
+.theme-light .hero-atmosphere,
+.theme-light .hero-overlay,
+.theme-light .fabric-scene,
+.theme-light .luxury-cursor {
+  opacity: 0.18;
+}
+
+.theme-light .glass-panel,
+.theme-light .gallery-post,
+.theme-light .collection-card,
+.theme-light .look-card,
+.theme-light .admin-panel,
+.theme-light .admin-hero,
+.theme-light .post-row,
+.theme-light .asset-card {
+  border-color: rgba(57, 35, 27, 0.12);
+  background: rgba(255, 255, 255, 0.62);
+  color: #2d1c15;
+}
+
+.theme-light .primary-button {
+  color: #fff8ee;
+  background: #6b4635;
+}
+
+.theme-light .secondary-button,
+.theme-light .theme-toggle,
+.theme-light input,
+.theme-light textarea,
+.theme-light select {
+  border-color: rgba(57, 35, 27, 0.18);
+  background: rgba(255, 255, 255, 0.68);
+  color: #2d1c15;
+}
+
+.theme-light .eyebrow,
+.theme-light .admin-panel-head,
+.theme-light .collection-card > span,
+.theme-light .gallery-post p,
+.theme-light .stat span {
+  color: #8b623e;
+}
+
+.theme-light p,
+.theme-light .section-copy,
+.theme-light .story p,
+.theme-light .footer-links a,
+.theme-light .footer-links span,
+.theme-light .admin-empty,
+.theme-light .admin-note,
+.theme-light .admin-saved {
+  color: rgba(45, 28, 21, 0.72);
 }
 
 .top-nav > div {
@@ -172,6 +263,31 @@ h2,
 .brand-mark {
   font-size: 1.35rem !important;
   color: var(--ivory) !important;
+}
+
+.public-paged .page-section {
+  display: none;
+}
+
+.public-paged[data-public-page="home"] .page-home {
+  display: grid;
+}
+
+.public-paged[data-public-page="home"] .hero {
+  display: flex;
+}
+
+.public-paged[data-public-page="collections"] .page-collections,
+.public-paged[data-public-page="lookbook"] .page-lookbook,
+.public-paged[data-public-page="gallery"] .page-gallery,
+.public-paged[data-public-page="booking"] .page-booking {
+  display: block;
+}
+
+.public-paged[data-public-page="gallery"] .tiktok-section,
+.public-paged[data-public-page="booking"] .booking,
+.public-paged[data-public-page="booking"] .orders {
+  display: grid;
 }
 
 .hero {
@@ -986,7 +1102,8 @@ footer p {
   margin-top: 2rem;
 }
 
-.admin-nav a {
+.admin-nav a,
+.admin-nav button {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -994,11 +1111,15 @@ footer p {
   padding: 0 0.8rem;
   border: 1px solid transparent;
   border-radius: 0.5rem;
+  background: transparent;
   color: rgba(255, 248, 238, 0.72);
   text-decoration: none;
+  text-align: left;
 }
 
-.admin-nav a:hover {
+.admin-nav a:hover,
+.admin-nav button:hover,
+.admin-nav button.active {
   border-color: rgba(215, 180, 106, 0.28);
   background: rgba(255, 248, 238, 0.06);
   color: var(--ivory);
@@ -1043,11 +1164,44 @@ footer p {
   line-height: 1.6;
 }
 
+.empty-content {
+  min-height: 16rem;
+  place-items: center;
+  padding: 2rem;
+  color: rgba(255, 248, 238, 0.68);
+  text-align: center;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.72fr);
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.admin-main .admin-page-group,
+.admin-main .admin-page-panel {
+  display: none;
+}
+
+.admin-main[data-admin-page="brand"] .settings-pages,
+.admin-main[data-admin-page="animation"] .settings-pages,
+.admin-main[data-admin-page="booking"] .booking-pages,
+.admin-main[data-admin-page="inquiries"] .booking-pages {
+  display: grid;
+}
+
+.admin-main[data-admin-page="brand"] #animation,
+.admin-main[data-admin-page="animation"] #brand,
+.admin-main[data-admin-page="booking"] #inquiries,
+.admin-main[data-admin-page="inquiries"] #booking {
+  display: none;
+}
+
+.admin-main[data-admin-page="posts"] #posts,
+.admin-main[data-admin-page="media"] #media,
+.admin-main[data-admin-page="notes"] #notes {
+  display: grid;
 }
 
 .admin-panel {
