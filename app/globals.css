@@ -1315,7 +1315,7 @@ footer p {
   }
 
   section {
-    padding: 4.5rem 1rem;
+    padding: 2.75rem 1rem;
   }
 
   .luxury-cursor {
@@ -1325,10 +1325,11 @@ footer p {
   .top-nav {
     position: sticky;
     top: 0;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.75rem;
     padding: 0.85rem 1rem;
-    background: rgba(7, 5, 4, 0.86);
+    border-bottom: 1px solid rgba(255, 248, 238, 0.08);
+    background: rgba(7, 5, 4, 0.94);
   }
 
   .brand-mark {
@@ -1351,8 +1352,8 @@ footer p {
   .hero {
     display: grid;
     min-height: auto;
-    padding: 3.5rem 1rem 6rem;
-    gap: 1.5rem;
+    padding: 1rem 1rem 3rem;
+    gap: 1rem;
     align-items: end;
     justify-items: stretch;
   }
@@ -1365,24 +1366,35 @@ footer p {
   }
 
   .collection-grid,
-  .lookbook-stage,
-  .tiktok-gallery,
   .review-row,
   .social-proof,
   .two-col {
     grid-template-columns: 1fr;
   }
 
+  .lookbook-stage,
+  .tiktok-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hero h1 {
     max-width: 100%;
-    font-size: clamp(2.65rem, 14vw, 4.45rem);
-    line-height: 0.9;
+    font-size: clamp(2.25rem, 11vw, 3.35rem);
+    line-height: 0.94;
     overflow-wrap: normal;
   }
 
   h2 {
-    font-size: clamp(2rem, 10.5vw, 3.4rem);
-    line-height: 0.98;
+    font-size: clamp(1.75rem, 8.5vw, 2.8rem);
+    line-height: 1;
+  }
+
+  .tagline,
+  .story p,
+  .section-copy,
+  .collection-card p {
+    font-size: 0.92rem;
+    line-height: 1.55;
   }
 
   .hero-actions,
@@ -1399,13 +1411,15 @@ footer p {
   }
 
   .portrait {
-    min-height: 28rem;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
   }
 
   .portrait .tiktok-embed-frame,
   .portrait .managed-media,
   .portrait .empty-showcase {
-    min-height: 28rem;
+    min-height: 100%;
+    height: 100%;
   }
 
   .phone-stack {
@@ -1437,17 +1451,27 @@ footer p {
     width: 100%;
     min-width: 0;
     margin-top: 0;
+    padding: 0.65rem;
+    border: 1px solid rgba(255, 248, 238, 0.1);
+    border-radius: 0.75rem;
+    background: rgba(255, 248, 238, 0.045);
   }
 
   .hero-showcase .tiktok-embed-frame,
   .hero-showcase .managed-media,
   .hero-showcase .empty-showcase,
+  .hero-showcase .managed-media {
+    width: 100%;
+    max-width: 100%;
+    min-height: 23rem;
+  }
+
   .tiktok-embed-frame,
   .managed-media,
   .empty-showcase {
     width: 100%;
     max-width: 100%;
-    min-height: 30rem;
+    min-height: 100%;
   }
 
   .hero-content {
@@ -1462,12 +1486,16 @@ footer p {
   }
 
   .collection-card {
-    min-height: 30rem;
+    min-height: 0;
+    aspect-ratio: 4 / 5.35;
+    padding: 0;
+    border-radius: 0.72rem;
   }
 
   .gallery-post-media,
   .gallery-post.featured .gallery-post-media {
-    height: 30rem;
+    height: auto;
+    aspect-ratio: 4 / 5.1;
   }
 
   .gallery-post.featured {
@@ -1477,6 +1505,144 @@ footer p {
   .form-tabs {
     grid-template-columns: 1fr;
     border-radius: 0.5rem;
+  }
+
+  .section-heading {
+    margin-bottom: 1.35rem;
+    text-align: left;
+  }
+
+  .section-heading h2 {
+    max-width: 11ch;
+  }
+
+  .about,
+  .tiktok-section,
+  .booking,
+  .orders {
+    gap: 1.25rem;
+  }
+
+  .collections,
+  .gallery-section,
+  .transformations,
+  .social-proof,
+  .lookbook,
+  .about,
+  .tiktok-section,
+  .booking,
+  .orders {
+    padding-top: 2.75rem;
+    padding-bottom: 2.75rem;
+  }
+
+  .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .collection-card div {
+    left: 0.65rem;
+    right: 0.65rem;
+    bottom: 0.65rem;
+  }
+
+  .collection-card > span {
+    top: 0.65rem;
+    left: 0.65rem;
+  }
+
+  .collection-card h3,
+  .look-card h3,
+  .gallery-post h3,
+  footer h2 {
+    font-size: clamp(1.15rem, 6.2vw, 1.9rem);
+    line-height: 1;
+  }
+
+  .collection-card p {
+    display: -webkit-box;
+    margin-bottom: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .lookbook {
+    min-height: auto;
+  }
+
+  .lookbook-stage {
+    position: static;
+    gap: 0.75rem;
+  }
+
+  .look-card {
+    min-height: 0;
+    padding: 0.65rem;
+    border-radius: 0.72rem;
+  }
+
+  .look-embed {
+    height: auto;
+    aspect-ratio: 4 / 5;
+  }
+
+  .look-card p,
+  .look-card span {
+    font-size: 0.76rem;
+  }
+
+  .phone-card {
+    height: auto;
+    min-height: 20rem;
+    border-width: 0.35rem;
+    border-radius: 1.35rem;
+  }
+
+  .review-card {
+    padding: 1rem;
+  }
+
+  .booking-form,
+  .order-form,
+  .glass-panel {
+    border-radius: 0.72rem;
+  }
+
+  .tiktok-gallery {
+    gap: 0.75rem;
+  }
+
+  .gallery-post {
+    gap: 0.45rem;
+    padding: 0.5rem;
+    border-radius: 0.72rem;
+  }
+
+  .gallery-post p {
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+
+  .gallery-post a {
+    font-size: 0.78rem;
+  }
+
+  .social-proof {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding-top: 2.75rem;
+  }
+
+  .stat {
+    padding: 1rem 0.75rem;
+    border: 1px solid rgba(215, 180, 106, 0.2);
+    border-radius: 0.72rem;
+  }
+
+  .stat span {
+    font-size: clamp(1.9rem, 11vw, 3rem);
   }
 
   footer,
@@ -1537,16 +1703,19 @@ footer p {
   }
 
   .hero h1 {
-    font-size: clamp(2.55rem, 13.5vw, 3.75rem);
+    font-size: clamp(2.2rem, 10.5vw, 3.05rem);
   }
 
   .hero-showcase .tiktok-embed-frame,
   .hero-showcase .managed-media,
-  .hero-showcase .empty-showcase,
+  .hero-showcase .empty-showcase {
+    min-height: 22rem;
+  }
+
   .gallery-post-media,
   .gallery-post.featured .gallery-post-media {
-    min-height: 26rem;
-    height: 26rem;
+    min-height: 0;
+    height: auto;
   }
 
   .admin-nav {
@@ -1568,6 +1737,23 @@ footer p {
 
   .eyebrow {
     letter-spacing: 0.12em;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .collection-grid,
+  .lookbook-stage,
+  .tiktok-gallery {
+    gap: 0.62rem;
+  }
+
+  .gallery-post,
+  .collection-card,
+  .look-card {
+    border-radius: 0.62rem;
   }
 }
 
