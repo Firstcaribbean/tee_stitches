@@ -410,22 +410,6 @@ h2,
   background: rgba(255, 248, 238, 0.08);
 }
 
-.tiktok-float {
-  position: absolute;
-  right: clamp(1rem, 4vw, 4rem);
-  bottom: clamp(5rem, 10vw, 8rem);
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.8rem 1rem;
-  border: 1px solid rgba(255, 248, 238, 0.22);
-  border-radius: 999px;
-  background: rgba(255, 248, 238, 0.09);
-  backdrop-filter: blur(18px);
-  text-decoration: none;
-}
-
 .hero-showcase {
   position: relative;
   right: auto;
@@ -1532,23 +1516,13 @@ footer p {
     justify-items: stretch;
   }
 
-  .tiktok-float {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    max-width: calc(100vw - 2rem);
-  }
-
   .collection-grid,
+  .lookbook-stage,
+  .tiktok-gallery,
   .review-row,
   .social-proof,
   .two-col {
     grid-template-columns: 1fr;
-  }
-
-  .lookbook-stage,
-  .tiktok-gallery {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero h1 {
@@ -1610,6 +1584,9 @@ footer p {
     width: 100%;
     max-width: 100%;
     margin-left: 0;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 5.2;
     transform: none !important;
   }
 
@@ -1712,7 +1689,7 @@ footer p {
   }
 
   .collection-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
 
@@ -1769,8 +1746,6 @@ footer p {
   }
 
   .phone-card {
-    height: auto;
-    min-height: 20rem;
     border-width: 0.35rem;
     border-radius: 1.35rem;
   }
@@ -1786,6 +1761,7 @@ footer p {
   }
 
   .tiktok-gallery {
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
 
@@ -1801,7 +1777,7 @@ footer p {
   }
 
   .gallery-post a {
-    font-size: 0.78rem;
+    display: none;
   }
 
   .social-proof {
@@ -1922,7 +1898,8 @@ footer p {
   .collection-grid,
   .lookbook-stage,
   .tiktok-gallery {
-    gap: 0.62rem;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .gallery-post,

@@ -200,7 +200,7 @@ const collections = [
 ];
 
 const looks = [
-  { title: "The Bida Pearl", category: "Bridal couture", fabric: "Real TikTok atelier showcase", post: tiktokPosts[0] },
+  { title: "The Bida Pearl", category: "Bridal couture", fabric: "Real atelier showcase", post: tiktokPosts[0] },
   { title: "Champagne Curve", category: "Luxury gown", fabric: "Client-ready fashion work", post: tiktokPosts[2] },
   { title: "After-Dusk Native", category: "Native style", fabric: "Bida signature finish", post: tiktokPosts[3] },
   { title: "Soft Power", category: "Ready-to-wear", fabric: "Measured and styled", post: tiktokPosts[4] }
@@ -648,17 +648,6 @@ export default function Home() {
           <span>Main Tee Stitches showcase</span>
           <MediaDisplay asset={assetFor("hero-main")} fallback={fallbackPost} title="Main Tee Stitches showcase" />
         </motion.div>
-        <motion.a
-          className="tiktok-float"
-          href={managedConfig.brand.tiktokUrl}
-          target="_blank"
-          rel="noreferrer"
-          animate={{ y: [0, -12, 0], rotate: [0, 4, 0] }}
-          transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          TikTok
-          <ArrowUpRight size={16} />
-        </motion.a>
       </section>
 
       <section className="about section-grid">
@@ -749,10 +738,10 @@ export default function Home() {
 
       <section className="tiktok-section section-grid">
         <div className="reveal">
-          <p className="eyebrow">TikTok atelier</p>
-          <h2>Her actual TikTok work, curated like a luxury house reel.</h2>
+          <p className="eyebrow">Atelier films</p>
+          <h2>Real Tee Stitches work, curated like a luxury house reel.</h2>
           <a className="secondary-button" href={managedConfig.brand.tiktokUrl} target="_blank" rel="noreferrer">
-            Watch More on TikTok
+            Watch More
             <ArrowUpRight size={18} />
           </a>
         </div>
@@ -808,7 +797,7 @@ export default function Home() {
       <section id="gallery" className="gallery-section">
         <div className="section-heading reveal">
           <p className="eyebrow">Gallery</p>
-          <h2>Actual Tee Stitches posts, framed as a digital atelier wall.</h2>
+          <h2>Actual Tee Stitches work, framed as a digital atelier wall.</h2>
         </div>
         <div className="tiktok-gallery">
           {managedConfig.mediaAssets.filter((asset) => asset.placement === "gallery").map((asset) => (
@@ -829,7 +818,7 @@ export default function Home() {
               <h3>{post.title}</h3>
               {post.link && (
                 <a href={post.link} target="_blank" rel="noreferrer">
-                  Open on TikTok
+                  View original
                   <ArrowUpRight size={16} />
                 </a>
               )}
@@ -841,7 +830,7 @@ export default function Home() {
       <section className="social-proof">
         <div className="stat reveal">
           <span>1.4K+</span>
-          <p>TikTok followers</p>
+          <p>Social followers</p>
         </div>
         <div className="stat reveal">
           <span>2K+</span>
