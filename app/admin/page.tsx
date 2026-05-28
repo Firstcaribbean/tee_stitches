@@ -329,15 +329,15 @@ export default function AdminPage() {
       <aside className="admin-sidebar">
         <a className="brand-mark" href="/">Tee Stitches</a>
         <div className="admin-nav">
-          <button className={activePanel === "brand" ? "active" : ""} onClick={() => setActivePanel("brand")}><Palette size={16} /> Brand</button>
-          <button className={activePanel === "posts" ? "active" : ""} onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
-          <button className={activePanel === "media" ? "active" : ""} onClick={() => setActivePanel("media")}><Upload size={16} /> Media</button>
-          <button className={activePanel === "animation" ? "active" : ""} onClick={() => setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
-          <button className={activePanel === "booking" ? "active" : ""} onClick={() => setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
-          <button className={activePanel === "inquiries" ? "active" : ""} onClick={() => setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
-          <button className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Notes</button>
+          <button type="button" className={activePanel === "brand" ? "active" : ""} onClick={() => setActivePanel("brand")}><Palette size={16} /> Brand</button>
+          <button type="button" className={activePanel === "posts" ? "active" : ""} onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
+          <button type="button" className={activePanel === "media" ? "active" : ""} onClick={() => setActivePanel("media")}><Upload size={16} /> Media</button>
+          <button type="button" className={activePanel === "animation" ? "active" : ""} onClick={() => setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
+          <button type="button" className={activePanel === "booking" ? "active" : ""} onClick={() => setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
+          <button type="button" className={activePanel === "inquiries" ? "active" : ""} onClick={() => setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
+          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Notes</button>
           <a href="/"><Eye size={16} /> View site</a>
-          <button onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
+          <button type="button" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
         </div>
       </aside>
 
@@ -346,16 +346,16 @@ export default function AdminPage() {
           <p className="eyebrow">Private fashion house control room</p>
           <h1>Manage the brand experience without touching code.</h1>
           <div className="admin-actions">
-            <button className="primary-button" onClick={save}><Save size={18} /> Save changes</button>
-            <button className="secondary-button" onClick={exportConfig}><Download size={18} /> Export config</button>
-            <button className="secondary-button" onClick={reset}><Settings size={18} /> Reset</button>
-            <button className="secondary-button" onClick={logout}><Shield size={18} /> Lock admin</button>
+            <button type="button" className="primary-button" onClick={save}><Save size={18} /> Save changes</button>
+            <button type="button" className="secondary-button" onClick={exportConfig}><Download size={18} /> Export config</button>
+            <button type="button" className="secondary-button" onClick={reset}><Settings size={18} /> Reset</button>
+            <button type="button" className="secondary-button" onClick={logout}><Shield size={18} /> Lock admin</button>
           </div>
           {savedAt && <p className="admin-saved"><Check size={16} /> Saved at {savedAt}. Refresh the public site to see changes.</p>}
         </div>
 
-        <div className="admin-grid admin-page-group settings-pages">
-          <section id="brand" className="admin-panel">
+        {(activePanel === "brand" || activePanel === "animation") && <div className="admin-grid admin-page-group settings-pages">
+          {activePanel === "brand" && <section id="brand" className="admin-panel">
             <div className="admin-panel-head">
               <Palette size={18} />
               <h2>Brand Settings</h2>
@@ -369,9 +369,9 @@ export default function AdminPage() {
               <label>Location<input value={config.brand.location} onChange={(event) => updateBrand("location", event.target.value)} /></label>
             </div>
             <label>TikTok profile<input value={config.brand.tiktokUrl} onChange={(event) => updateBrand("tiktokUrl", event.target.value)} /></label>
-          </section>
+          </section>}
 
-          <section id="animation" className="admin-panel">
+          {activePanel === "animation" && <section id="animation" className="admin-panel">
             <div className="admin-panel-head">
               <Wand2 size={18} />
               <h2>Animation Controls</h2>
@@ -394,10 +394,10 @@ export default function AdminPage() {
               </label>
             ))}
             <div className="admin-note"><Shield size={16} /> Use minimal mode for weaker phones, runway mode for campaign launches.</div>
-          </section>
-        </div>
+          </section>}
+        </div>}
 
-        <section id="posts" className="admin-panel wide admin-page-panel">
+        {activePanel === "posts" && <section id="posts" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Clapperboard size={18} />
             <h2>TikTok & Showcase Posts</h2>
@@ -438,11 +438,11 @@ export default function AdminPage() {
                       <input type="file" accept="image/*,video/*,.gif,.webp" onChange={(event) => uploadPostMedia(index, event.target.files)} />
                     </label>
                     {post.media && (
-                      <button className="secondary-button" onClick={() => updatePost(index, "media", undefined)}>
+                      <button type="button" className="secondary-button" onClick={() => updatePost(index, "media", undefined)}>
                         <Trash2 size={18} /> Remove media
                       </button>
                     )}
-                    <button className="secondary-button danger-button" onClick={() => deletePost(index)}>
+                    <button type="button" className="secondary-button danger-button" onClick={() => deletePost(index)}>
                       <Trash2 size={18} /> Delete post
                     </button>
                   </div>
@@ -452,6 +452,7 @@ export default function AdminPage() {
           </div>
           <div className="admin-actions">
             <button
+              type="button"
               className="secondary-button"
               onClick={() => setConfig((current) => ({
                 ...current,
@@ -470,9 +471,9 @@ export default function AdminPage() {
               <Plus size={18} /> Add post
             </button>
           </div>
-        </section>
+        </section>}
 
-        <section id="media" className="admin-panel wide admin-page-panel">
+        {activePanel === "media" && <section id="media" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Upload size={18} />
             <h2>Upload Media & Choose Placement</h2>
@@ -512,6 +513,7 @@ export default function AdminPage() {
                     </select>
                   </label>
                   <button
+                    type="button"
                     className="secondary-button"
                     onClick={() => setConfig((current) => ({
                       ...current,
@@ -524,10 +526,10 @@ export default function AdminPage() {
               ))
             )}
           </div>
-        </section>
+        </section>}
 
-        <div className="admin-grid admin-page-group booking-pages">
-          <section id="booking" className="admin-panel">
+        {(activePanel === "booking" || activePanel === "inquiries") && <div className="admin-grid admin-page-group booking-pages">
+          {activePanel === "booking" && <section id="booking" className="admin-panel">
             <div className="admin-panel-head">
               <CalendarDays size={18} />
               <h2>Booking System</h2>
@@ -539,9 +541,9 @@ export default function AdminPage() {
               <input type="checkbox" checked={config.booking.requireDeposit} onChange={(event) => updateBooking("requireDeposit", event.target.checked)} />
               <span>Require deposit before production</span>
             </label>
-          </section>
+          </section>}
 
-          <section id="inquiries" className="admin-panel">
+          {activePanel === "inquiries" && <section id="inquiries" className="admin-panel">
             <div className="admin-panel-head">
               <Activity size={18} />
               <h2>Bookings & Leads</h2>
@@ -559,13 +561,13 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
-            <button className="secondary-button" onClick={() => { window.localStorage.removeItem(INQUIRIES_KEY); setInquiries([]); }}>
+            <button type="button" className="secondary-button" onClick={() => { window.localStorage.removeItem(INQUIRIES_KEY); setInquiries([]); }}>
               <Trash2 size={18} /> Clear local leads
             </button>
-          </section>
-        </div>
+          </section>}
+        </div>}
 
-        <section id="notes" className="admin-panel wide admin-page-panel">
+        {activePanel === "notes" && <section id="notes" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Upload size={18} />
             <h2>Production Notes</h2>
@@ -573,7 +575,7 @@ export default function AdminPage() {
           <p className="admin-empty">
             This dashboard currently stores settings in this browser for fast local management. For production, connect these same fields to Supabase or Firebase with admin authentication, media storage, and booking notifications.
           </p>
-        </section>
+        </section>}
       </section>
     </main>
   );
