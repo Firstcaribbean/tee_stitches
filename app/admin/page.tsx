@@ -6,8 +6,10 @@ import {
   CalendarDays,
   Check,
   Clapperboard,
+  ChevronLeft,
   Download,
   Eye,
+  LayoutGrid,
   Palette,
   Plus,
   Save,
@@ -91,7 +93,7 @@ type Inquiry = {
   createdAt: string;
 };
 
-type AdminPageKey = "brand" | "animation" | "posts" | "media" | "booking" | "inquiries" | "notes";
+type AdminPageKey = "overview" | "brand" | "animation" | "posts" | "media" | "booking" | "inquiries" | "security" | "notes";
 type ThemeMode = "dark" | "light";
 
 const defaultConfig: ManagedConfig = {
@@ -200,8 +202,9 @@ export default function AdminPage() {
   const [config, setConfig] = useState<ManagedConfig>(defaultConfig);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [savedAt, setSavedAt] = useState<string>("");
-  const [activePanel, setActivePanel] = useState<AdminPageKey>("brand");
+  const [activePanel, setActivePanel] = useState<AdminPageKey>("overview");
   const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -209,7 +212,22 @@ export default function AdminPage() {
   const [cloudStatus, setCloudStatus] = useState("Local browser mode");
   const [isPublishing, setIsPublishing] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [toasts, setToasts] = useState<Array<{ id: string; title: string; detail?: string; tone?: "success" | "error" | "info" }>>([]);
   const consultationText = useMemo(() => config.booking.consultationTypes.join(", "), [config.booking.consultationTypes]);
+  const overviewMetrics = useMemo(() => [
+    { label: "Posts", value: String(config.posts.length), detail: "Published showcase entries" },
+    { label: "Media files", value: String(config.mediaAssets.length), detail: "Uploaded assets in library" },
+    { label: "Leads", value: String(inquiries.length), detail: "Local booking inquiries" },
+    { label: "Security", value: config.security?.username || "set", detail: "Dashboard login username" }
+  ], [config.posts.length, config.mediaAssets.length, inquiries.length, config.security?.username]);
+
+  const pushToast = (title: string, detail?: string, tone: "success" | "error" | "info" = "info") => {
+    const id = `${Date.now()}-${crypto.randomUUID()}`;
+    setToasts((current) => [...current, { id, title, detail, tone }]);
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+    }, 3200);
+  };
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -248,6 +266,8 @@ export default function AdminPage() {
         if (response.ok) {
           const data = await response.json() as { ok?: boolean };
           setIsAuthed(Boolean(data.ok));
+        } else {
+          setIsAuthed(false);
         }
       } catch {
         setIsAuthed(false);
@@ -291,6 +311,7 @@ export default function AdminPage() {
         posts: posts.some((post) => post.featured) ? posts : posts.map((post, postIndex) => ({ ...post, featured: postIndex === 0 }))
       };
     });
+    pushToast("Post removed", "Delete is pending until you save changes.", "info");
   };
 
   const addPost = () => {
@@ -331,9 +352,11 @@ export default function AdminPage() {
       await publishConfig(storageSafeConfig);
       setSavedAt(new Date().toLocaleTimeString());
       setCloudStatus("Published online. Phones and laptops will load these changes.");
+      pushToast("Published", "Changes are live across devices.", "success");
     } catch {
       window.alert("The settings were saved on this laptop, but could not publish online. Check Cloudinary/Vercel environment settings.");
       setCloudStatus("Cloud publish failed. Laptop draft is still saved locally.");
+      pushToast("Publish failed", "Saved locally, but the online publish did not finish.", "error");
     } finally {
       setIsPublishing(false);
     }
@@ -344,6 +367,7 @@ export default function AdminPage() {
     setConfig(defaultConfig);
     window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(defaultConfig));
     setSavedAt(new Date().toLocaleTimeString());
+    pushToast("Reset complete", "The default dashboard state is restored locally.", "info");
   };
 
   const exportConfig = () => {
@@ -369,12 +393,15 @@ export default function AdminPage() {
         if (!response.ok) {
           const error = await response.json().catch(() => null);
           setAuthError(error?.error ?? "Incorrect username or password.");
+          pushToast("Login failed", error?.error ?? "Check the credentials and try again.", "error");
           return;
         }
         setIsAuthed(true);
         setAuthError("");
+        pushToast("Logged in", "Welcome back to the dashboard.", "success");
       } catch {
         setAuthError("Login failed. Check the network and try again.");
+        pushToast("Login failed", "Check the network and try again.", "error");
       }
     })();
   };
@@ -382,6 +409,7 @@ export default function AdminPage() {
   const logout = () => {
     void fetch("/api/admin/session", { method: "DELETE", credentials: "include" });
     setIsAuthed(false);
+    pushToast("Locked", "Admin session cleared.", "info");
   };
 
   const uploadFileToCloudinary = async (file: File) => {
@@ -425,12 +453,18 @@ export default function AdminPage() {
     if (!files?.length) return;
     const uploaded = await Promise.all(Array.from(files).map(fileToMediaAsset));
     setConfig((current) => ({ ...current, mediaAssets: [...uploaded, ...current.mediaAssets] }));
+    pushToast("Upload complete", `${uploaded.length} file${uploaded.length === 1 ? "" : "s"} added to the library.`, "success");
   };
 
   const uploadPostMedia = async (index: number, files: FileList | null) => {
     if (!files?.length) return;
     const media = await fileToMediaAsset(files[0]);
     updatePost(index, "media", media);
+  };
+
+  const assignLibraryMediaToPost = (index: number, asset: MediaAsset) => {
+    updatePost(index, "media", asset);
+    pushToast("Media selected", `${asset.caption || asset.name} attached to the post.`, "success");
   };
 
   const cloudifyAsset = async (asset: MediaAsset) => {
@@ -464,9 +498,11 @@ export default function AdminPage() {
       await publishConfig(cloudConfig);
       setSavedAt(new Date().toLocaleTimeString());
       setCloudStatus("Migration complete. Existing laptop uploads are now online.");
+      pushToast("Migration complete", "Local laptop uploads were published online.", "success");
     } catch {
       window.alert("Migration failed. Check the Cloudinary environment settings, then try again from this laptop.");
       setCloudStatus("Migration failed before all uploads moved online.");
+      pushToast("Migration failed", "Nothing was lost locally, but the cloud publish stopped.", "error");
     } finally {
       setIsMigrating(false);
     }
@@ -502,36 +538,87 @@ export default function AdminPage() {
   }
 
   return (
-    <main className={`admin-shell theme-${theme}`}>
-      <aside className="admin-sidebar">
-        <a className="brand-mark" href="/">Tee Stitches</a>
+    <main className={`admin-shell theme-${theme} ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+      <aside className={`admin-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <div className="admin-sidebar-head">
+          <a className="brand-mark" href="/">Tee Stitches</a>
+          <button type="button" className="sidebar-toggle" onClick={() => setSidebarCollapsed((current) => !current)} aria-label="Toggle sidebar">
+            {sidebarCollapsed ? <LayoutGrid size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
         <div className="admin-nav">
+          <button type="button" className={activePanel === "overview" ? "active" : ""} onClick={() => setActivePanel("overview")}><LayoutGrid size={16} /> Overview</button>
           <button type="button" className={activePanel === "brand" ? "active" : ""} onClick={() => setActivePanel("brand")}><Palette size={16} /> Brand</button>
           <button type="button" className={activePanel === "posts" ? "active" : ""} onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Posts</button>
           <button type="button" className={activePanel === "media" ? "active" : ""} onClick={() => setActivePanel("media")}><Upload size={16} /> Media</button>
           <button type="button" className={activePanel === "animation" ? "active" : ""} onClick={() => setActivePanel("animation")}><Wand2 size={16} /> Animations</button>
           <button type="button" className={activePanel === "booking" ? "active" : ""} onClick={() => setActivePanel("booking")}><CalendarDays size={16} /> Booking</button>
           <button type="button" className={activePanel === "inquiries" ? "active" : ""} onClick={() => setActivePanel("inquiries")}><Activity size={16} /> Inquiries</button>
-          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Notes</button>
+          <button type="button" className={activePanel === "security" ? "active" : ""} onClick={() => setActivePanel("security")}><Shield size={16} /> Security</button>
+          <button type="button" className={activePanel === "notes" ? "active" : ""} onClick={() => setActivePanel("notes")}><Settings size={16} /> Backups</button>
+        </div>
+        <div className="admin-nav admin-nav-bottom">
           <a href="/"><Eye size={16} /> View site</a>
           <button type="button" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}><SunMoon size={16} /> {theme} theme</button>
         </div>
       </aside>
 
       <section className="admin-main" data-admin-page={activePanel}>
+        <div className="toast-stack" aria-live="polite" aria-atomic="true">
+          {toasts.map((toast) => (
+            <div className={`toast toast-${toast.tone ?? "info"}`} key={toast.id}>
+              <strong>{toast.title}</strong>
+              {toast.detail && <span>{toast.detail}</span>}
+            </div>
+          ))}
+        </div>
         <div className="admin-hero">
           <p className="eyebrow">Private fashion house control room</p>
-          <h1>Manage the brand experience without touching code.</h1>
+          <h1>Manage the brand from a clean, visual control room.</h1>
           <div className="admin-actions">
             <button type="button" className="primary-button" onClick={save} disabled={isPublishing}><Save size={18} /> {isPublishing ? "Publishing..." : "Save changes"}</button>
-            <button type="button" className="secondary-button" onClick={exportConfig}><Download size={18} /> Export config</button>
-            <button type="button" className="secondary-button" onClick={migrateLocalUploadsToCloud} disabled={isMigrating}><Upload size={18} /> {isMigrating ? "Migrating..." : "Migrate laptop uploads"}</button>
-            <button type="button" className="secondary-button" onClick={reset}><Settings size={18} /> Reset</button>
+            <button type="button" className="secondary-button" onClick={exportConfig}><Download size={18} /> Download backup</button>
+            <button type="button" className="secondary-button" onClick={migrateLocalUploadsToCloud} disabled={isMigrating}><Upload size={18} /> {isMigrating ? "Migrating..." : "Migrate uploads"}</button>
             <button type="button" className="secondary-button" onClick={logout}><Shield size={18} /> Lock admin</button>
           </div>
           <p className="admin-empty">{cloudStatus}</p>
           {savedAt && <p className="admin-saved"><Check size={16} /> Saved at {savedAt}. Refresh the public site to see changes.</p>}
         </div>
+
+        {activePanel === "overview" && <section className="admin-panel admin-page-panel admin-overview">
+          <div className="admin-panel-head">
+            <LayoutGrid size={18} />
+            <h2>Overview</h2>
+          </div>
+          <div className="overview-grid">
+            {overviewMetrics.map((item) => (
+              <article className="overview-card" key={item.label}>
+                <p>{item.label}</p>
+                <strong>{item.value}</strong>
+                <span>{item.detail}</span>
+              </article>
+            ))}
+          </div>
+          <div className="overview-grid two-up">
+            <article className="admin-panel overview-card wide">
+              <p>Recent inquiries</p>
+              {inquiries.length ? inquiries.slice(0, 3).map((inquiry) => (
+                <div className="mini-row" key={inquiry.createdAt}>
+                  <strong>{inquiry.name}</strong>
+                  <span>{inquiry.type}</span>
+                </div>
+              )) : <span>No inquiries yet.</span>}
+            </article>
+            <article className="admin-panel overview-card wide">
+              <p>Quick actions</p>
+              <div className="mini-actions">
+                <button type="button" className="secondary-button" onClick={() => setActivePanel("posts")}><Clapperboard size={16} /> Manage posts</button>
+                <button type="button" className="secondary-button" onClick={() => setActivePanel("media")}><Upload size={16} /> Open media library</button>
+                <button type="button" className="secondary-button" onClick={() => setActivePanel("security")}><Shield size={16} /> Security settings</button>
+              </div>
+            </article>
+          </div>
+        </section>}
 
         {(activePanel === "brand" || activePanel === "animation") && <div className="admin-grid admin-page-group settings-pages">
           {activePanel === "brand" && <section id="brand" className="admin-panel">
@@ -548,14 +635,6 @@ export default function AdminPage() {
               <label>Location<input value={config.brand.location} onChange={(event) => updateBrand("location", event.target.value)} /></label>
             </div>
             <label>TikTok profile<input value={config.brand.tiktokUrl} onChange={(event) => updateBrand("tiktokUrl", event.target.value)} /></label>
-            <div className="admin-panel-head">
-              <Shield size={18} />
-              <h2>Admin Login</h2>
-            </div>
-            <div className="two-col">
-              <label>Username<input value={config.security.username} onChange={(event) => updateSecurity("username", event.target.value)} /></label>
-              <label>Password<input type="password" value={config.security.password} onChange={(event) => updateSecurity("password", event.target.value)} /></label>
-            </div>
           </section>}
 
           {activePanel === "animation" && <section id="animation" className="admin-panel">
@@ -606,14 +685,33 @@ export default function AdminPage() {
                     <label>Title<input value={post.title} onChange={(event) => updatePost(index, "title", event.target.value)} /></label>
                     <label>Label<input value={post.label} onChange={(event) => updatePost(index, "label", event.target.value)} /></label>
                   </div>
-                  <div className="two-col">
-                    <label>Link<input value={post.link} onChange={(event) => updatePost(index, "link", event.target.value)} placeholder="Optional TikTok link" /></label>
-                    <label>Media source<input value={post.media ? post.media.name : post.id ? "TikTok link connected" : "No media selected"} readOnly /></label>
-                  </div>
+                  <label>Link<input value={post.link} onChange={(event) => updatePost(index, "link", event.target.value)} placeholder="Optional TikTok link" /></label>
                   <label className="admin-toggle">
                     <input type="checkbox" checked={Boolean(post.featured)} onChange={(event) => updatePost(index, "featured", event.target.checked)} />
                     <span>Main hero showcase</span>
                   </label>
+                  <div className="media-picker-panel">
+                    <div className="media-picker-head">
+                      <span>Choose from library</span>
+                      <button type="button" className="secondary-button small-button" onClick={() => updatePost(index, "media", undefined)}>Clear media</button>
+                    </div>
+                    <div className="media-picker-grid">
+                      {config.mediaAssets.length ? config.mediaAssets.slice(0, 8).map((asset) => (
+                        <button
+                          type="button"
+                          key={asset.id}
+                          className={`media-choice ${post.media?.id === asset.id ? "selected" : ""}`}
+                          onClick={() => assignLibraryMediaToPost(index, asset)}
+                        >
+                          <span className="media-choice-preview">
+                            <AdminMediaPreview asset={asset} alt={asset.caption || asset.name} />
+                          </span>
+                          <strong>{asset.caption || asset.name}</strong>
+                          <span>{asset.placement}</span>
+                        </button>
+                      )) : <p className="admin-empty">Upload media in the Media tab first, then attach it here.</p>}
+                    </div>
+                  </div>
                   <div className="post-media-tools">
                     <label className="upload-box post-upload">
                       <Upload size={20} />
@@ -647,16 +745,14 @@ export default function AdminPage() {
         {activePanel === "media" && <section id="media" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Upload size={18} />
-            <h2>Upload Media & Choose Placement</h2>
+            <h2>Media Library</h2>
           </div>
+          <div className="admin-note"><Upload size={16} /> Upload files once, then assign them to posts, hero, gallery, or collection sections.</div>
           <label className="upload-box admin-upload">
             <Upload size={24} />
             Upload JPG, PNG, MP4, GIF, WebP or animation files
             <input type="file" accept="image/*,video/*,.gif,.webp" multiple onChange={(event) => uploadMedia(event.target.files)} />
           </label>
-          <p className="admin-empty">
-            Uploaded files publish to Cloudinary when the environment keys are set. If Cloudinary is not configured yet, uploads stay as a laptop draft until you use "Migrate laptop uploads".
-          </p>
           <div className="asset-grid">
             {config.mediaAssets.length === 0 ? (
               <p className="admin-empty">No uploaded media yet.</p>
@@ -734,6 +830,18 @@ export default function AdminPage() {
           </section>}
         </div>}
 
+        {activePanel === "security" && <section id="security" className="admin-panel wide admin-page-panel">
+          <div className="admin-panel-head">
+            <Shield size={18} />
+            <h2>Security</h2>
+          </div>
+          <div className="two-col">
+            <label>Username<input value={config.security.username} onChange={(event) => updateSecurity("username", event.target.value)} /></label>
+            <label>Password<input type="password" value={config.security.password} onChange={(event) => updateSecurity("password", event.target.value)} /></label>
+          </div>
+          <p className="admin-empty">These credentials control the login form. Save changes to publish the updated admin login.</p>
+        </section>}
+
         {activePanel === "notes" && <section id="notes" className="admin-panel wide admin-page-panel">
           <div className="admin-panel-head">
             <Upload size={18} />
@@ -742,6 +850,7 @@ export default function AdminPage() {
           <p className="admin-empty">
             For all-device publishing, set the Cloudinary environment variables in Vercel, then use Save changes or Migrate laptop uploads from this laptop.
           </p>
+          <button type="button" className="secondary-button" onClick={exportConfig}><Download size={18} /> Download backup</button>
         </section>}
       </section>
     </main>
