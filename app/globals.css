@@ -1902,6 +1902,14 @@ footer p {
     gap: 0.55rem;
   }
 
+  .collection-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .collection-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .gallery-post,
   .collection-card,
   .look-card {

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { getCloudinaryCredentials, isAdminRequest, signCloudinaryParams } from "../../cloudinary-utils";
+import { getCloudinaryCredentials, signCloudinaryParams } from "../../cloudinary-utils";
+import { getAdminSessionToken, verifyAdminSession } from "../../admin-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  if (!isAdminRequest(request)) {
+  if (!verifyAdminSession(getAdminSessionToken(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

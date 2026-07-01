@@ -517,6 +517,7 @@ function OrderForm({ categories }: { categories: string[] }) {
 
 export default function Home() {
   const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [isMobile, setIsMobile] = useState(false);
   const [activeCollection, setActiveCollection] = useState<{
     name: string;
     mood: string;
@@ -540,6 +541,10 @@ export default function Home() {
     post: managedPosts[index]
   }));
   useEffect(() => {
+    const updateViewport = () => setIsMobile(window.matchMedia("(max-width: 720px)").matches);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+
     const loadConfig = async () => {
       try {
         const response = await fetch("/api/site-config", { cache: "no-store" });
@@ -579,7 +584,10 @@ export default function Home() {
       void loadConfig();
     };
     window.addEventListener("storage", syncLocalConfig);
-    return () => window.removeEventListener("storage", syncLocalConfig);
+    return () => {
+      window.removeEventListener("storage", syncLocalConfig);
+      window.removeEventListener("resize", updateViewport);
+    };
   }, []);
 
   const assetFor = (placement: MediaAsset["placement"]) =>
@@ -684,10 +692,12 @@ export default function Home() {
           <p>
             {managedConfig.brand.about}
           </p>
-          <div className="scrolling-text" aria-hidden="true">
-            <span>Bida / bridal / couture / native / fittings / elegance / </span>
-            <span>Bida / bridal / couture / native / fittings / elegance / </span>
-          </div>
+          {!isMobile && (
+            <div className="scrolling-text" aria-hidden="true">
+              <span>Bida / bridal / couture / native / fittings / elegance / </span>
+              <span>Bida / bridal / couture / native / fittings / elegance / </span>
+            </div>
+          )}
         </div>
       </section>
 

@@ -22,7 +22,6 @@ import { resolveMediaUrl, saveMediaFile } from "../media-store";
 
 const ADMIN_STORAGE_KEY = "tee-stitches-admin-config";
 const INQUIRIES_KEY = "tee-stitches-inquiries";
-const ADMIN_SESSION_KEY = "tee-stitches-admin-session";
 const DEFAULT_ADMIN_USER = "admin";
 const DEFAULT_ADMIN_PASSWORD = "tee-stitches-admin";
 
@@ -213,7 +212,6 @@ export default function AdminPage() {
   const consultationText = useMemo(() => config.booking.consultationTypes.join(", "), [config.booking.consultationTypes]);
 
   useEffect(() => {
-    setIsAuthed(window.localStorage.getItem(ADMIN_SESSION_KEY) === "active");
     const loadConfig = async () => {
       let localConfig: ManagedConfig | null = null;
       try {
@@ -243,6 +241,20 @@ export default function AdminPage() {
     };
 
     loadConfig();
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", { credentials: "include", cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json() as { ok?: boolean };
+          setIsAuthed(Boolean(data.ok));
+        }
+      } catch {
+        setIsAuthed(false);
+      }
+    };
+
+    loadSession();
   }, []);
 
   const updateBrand = (key: keyof ManagedConfig["brand"], value: string) => {
@@ -298,14 +310,10 @@ export default function AdminPage() {
   };
 
   const publishConfig = async (nextConfig: ManagedConfig) => {
-    const credentials = { username: DEFAULT_ADMIN_USER, password: DEFAULT_ADMIN_PASSWORD };
     const response = await fetch("/api/admin/config", {
       method: "PUT",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${btoa(`${credentials.username}:${credentials.password}`)}`
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nextConfig)
     });
 
@@ -350,31 +358,38 @@ export default function AdminPage() {
 
   const login = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const expected = config.security ?? defaultConfig.security;
-    if (loginUsername.trim() === expected.username && loginPassword === expected.password) {
-      window.localStorage.setItem(ADMIN_SESSION_KEY, "active");
-      setIsAuthed(true);
-      setAuthError("");
-    } else {
-      setAuthError("Incorrect username or password.");
-    }
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/session", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loginUsername.trim(), password: loginPassword })
+        });
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          setAuthError(error?.error ?? "Incorrect username or password.");
+          return;
+        }
+        setIsAuthed(true);
+        setAuthError("");
+      } catch {
+        setAuthError("Login failed. Check the network and try again.");
+      }
+    })();
   };
 
   const logout = () => {
-    window.localStorage.removeItem(ADMIN_SESSION_KEY);
+    void fetch("/api/admin/session", { method: "DELETE", credentials: "include" });
     setIsAuthed(false);
   };
 
   const uploadFileToCloudinary = async (file: File) => {
-    const credentials = { username: DEFAULT_ADMIN_USER, password: DEFAULT_ADMIN_PASSWORD };
     const body = new FormData();
     body.append("file", file);
     const response = await fetch("/api/admin/upload", {
       method: "POST",
       credentials: "include",
-      headers: {
-        Authorization: `Basic ${btoa(`${credentials.username}:${credentials.password}`)}`
-      },
       body
     });
 
