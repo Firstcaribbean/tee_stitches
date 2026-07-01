@@ -768,6 +768,15 @@ footer h2 {
   padding: clamp(1rem, 3vw, 2rem);
 }
 
+.step-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  padding: 0.25rem;
+  border-radius: 0.55rem;
+  background: rgba(7, 5, 4, 0.34);
+}
+
 .form-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -785,9 +794,30 @@ footer h2 {
   color: rgba(255, 248, 238, 0.7);
 }
 
+.step-tabs button {
+  min-height: 2.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  background: rgba(255, 248, 238, 0.03);
+  color: rgba(255, 248, 238, 0.72);
+  text-transform: capitalize;
+}
+
 .form-tabs button.active {
   background: rgba(215, 180, 106, 0.22);
   color: var(--ivory);
+}
+
+.step-tabs button.active {
+  border-color: rgba(215, 180, 106, 0.28);
+  background: rgba(215, 180, 106, 0.15);
+  color: var(--ivory);
+}
+
+.step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 label {

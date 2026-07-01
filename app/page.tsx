@@ -412,6 +412,7 @@ function MediaDisplay({
 
 function BookingForm({ booking }: { booking: ManagedConfig["booking"] }) {
   const [bookingType, setBookingType] = useState(booking.consultationTypes[0] ?? "Bridal consultation");
+  const [bookingStep, setBookingStep] = useState<"details" | "schedule" | "notes">("details");
 
   const submitBooking = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -443,62 +444,104 @@ function BookingForm({ booking }: { booking: ManagedConfig["booking"] }) {
           </button>
         ))}
       </div>
-      <label>
-        Name
-        <input name="name" placeholder="Your full name" required />
-      </label>
-      <label>
-        Preferred date
-        <input name="date" type="date" required />
-      </label>
-      <label>
-        Appointment notes
-        <textarea name="notes" placeholder="Occasion, outfit idea, deadline, and location" rows={4} />
-      </label>
-      <button className="primary-button" type="submit">
-        <MessageCircle size={18} />
-        Book on WhatsApp
-      </button>
+      <div className="step-tabs" role="tablist" aria-label="Booking steps">
+        {["details", "schedule", "notes"].map((step) => (
+          <button key={step} type="button" className={bookingStep === step ? "active" : ""} onClick={() => setBookingStep(step as typeof bookingStep)}>
+            {step}
+          </button>
+        ))}
+      </div>
+      {bookingStep === "details" && (
+        <label>
+          Name
+          <input name="name" placeholder="Your full name" required />
+        </label>
+      )}
+      {bookingStep === "schedule" && (
+        <label>
+          Preferred date
+          <input name="date" type="date" required />
+        </label>
+      )}
+      {bookingStep === "notes" && (
+        <label>
+          Appointment notes
+          <textarea name="notes" placeholder="Occasion, outfit idea, deadline, and location" rows={4} />
+        </label>
+      )}
+      <div className="step-actions">
+        <button type="button" className="secondary-button" onClick={() => setBookingStep((current) => current === "details" ? "details" : current === "schedule" ? "details" : "schedule")}>
+          Back
+        </button>
+        <button type="button" className="secondary-button" onClick={() => setBookingStep((current) => current === "details" ? "schedule" : current === "schedule" ? "notes" : "notes")}>
+          Next
+        </button>
+        <button className="primary-button" type="submit">
+          <MessageCircle size={18} />
+          Book on WhatsApp
+        </button>
+      </div>
     </form>
   );
 }
 
 function OrderForm({ categories }: { categories: string[] }) {
+  const [orderStep, setOrderStep] = useState<"brief" | "measurements" | "delivery">("brief");
+
   return (
     <form className="glass-panel order-form">
-      <label className="upload-box">
-        <Upload size={22} />
-        Upload inspiration photos
-        <input type="file" accept="image/*" multiple />
-      </label>
-      <div className="two-col">
-        <label>
-          Outfit category
-          <select defaultValue="Luxury gowns">
-            {categories.map((name) => (
-              <option key={name}>{name}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Fabric preference
-          <select defaultValue="Lace and satin">
-            <option>Lace and satin</option>
-            <option>Aso-oke</option>
-            <option>Organza</option>
-            <option>Crepe</option>
-            <option>Designer recommendation</option>
-          </select>
-        </label>
+      <div className="step-tabs" role="tablist" aria-label="Order steps">
+        {["brief", "measurements", "delivery"].map((step) => (
+          <button key={step} type="button" className={orderStep === step ? "active" : ""} onClick={() => setOrderStep(step as typeof orderStep)}>
+            {step}
+          </button>
+        ))}
       </div>
-      <label>
-        Measurements
-        <textarea placeholder="Bust, waist, hips, shoulder, sleeve, length..." rows={4} />
-      </label>
-      <label>
-        Delivery location
-        <input placeholder="City, state, delivery preference" />
-      </label>
+      {orderStep === "brief" && (
+        <>
+          <label className="upload-box">
+            <Upload size={22} />
+            Upload inspiration photos
+            <input type="file" accept="image/*" multiple />
+          </label>
+          <div className="two-col">
+            <label>
+              Outfit category
+              <select defaultValue="Luxury gowns">
+                {categories.map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Fabric preference
+              <select defaultValue="Lace and satin">
+                <option>Lace and satin</option>
+                <option>Aso-oke</option>
+                <option>Organza</option>
+                <option>Crepe</option>
+                <option>Designer recommendation</option>
+              </select>
+            </label>
+          </div>
+        </>
+      )}
+      {orderStep === "measurements" && (
+        <label>
+          Measurements
+          <textarea placeholder="Bust, waist, hips, shoulder, sleeve, length..." rows={4} />
+        </label>
+      )}
+      {orderStep === "delivery" && (
+        <label>
+          Delivery location
+          <input placeholder="City, state, delivery preference" />
+        </label>
+      )}
+      <div className="step-actions">
+        <button type="button" className="secondary-button" onClick={() => setOrderStep((current) => current === "brief" ? "brief" : current === "measurements" ? "brief" : "measurements")}>Back</button>
+        <button type="button" className="secondary-button" onClick={() => setOrderStep((current) => current === "brief" ? "measurements" : current === "measurements" ? "delivery" : "delivery")}>Next</button>
+      </div>
       <div className="tracker">
         {tracker.map((step, index) => (
           <div className="tracker-step" key={step}>
@@ -635,7 +678,6 @@ export default function Home() {
           <a href="#lookbook">Lookbook</a>
           <a href="#gallery">Gallery</a>
           <a href="#booking">Book</a>
-          <a href="/admin">Admin</a>
           <button className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} aria-label="Switch theme">
             <SunMoon size={16} />
             {theme}
@@ -797,11 +839,15 @@ export default function Home() {
           <h2>From idea to entrance.</h2>
         </div>
         <div className="review-row">
-          {["The fitting felt personal, calm, and luxurious.", "My bridal dress carried the room.", "She understood the fabric before I finished explaining."].map((quote, index) => (
-            <div className="glass-panel review-card reveal" key={quote}>
+          {[
+            { quote: "The fitting felt personal, calm, and luxurious.", name: "Ada", role: "Bridal client" },
+            { quote: "My bridal dress carried the room.", name: "Nabila", role: "Reception look" },
+            { quote: "She understood the fabric before I finished explaining.", name: "Zainab", role: "Native style client" }
+          ].map((item) => (
+            <div className="glass-panel review-card reveal" key={item.quote}>
               <Sparkles size={20} />
-              <p>{quote}</p>
-              <span>Client 0{index + 1}</span>
+              <p>{item.quote}</p>
+              <span>{item.name} / {item.role}</span>
             </div>
           ))}
         </div>
